@@ -176,8 +176,6 @@ void handler_sigint_(int s)
 
 int main()
 {
-    mosquitto_lib_init();
-
 #ifdef POSIX_SIGNAL
     struct sigaction sa;
     sa.sa_handler = handler_sigint_;
@@ -219,8 +217,6 @@ int main()
     catch (...) {
         std::cout << "main(): unknown exception" << std::endl;
     }
-
-    mosquitto_lib_cleanup();
 
     printf("Exit!\n");
     return 0;
