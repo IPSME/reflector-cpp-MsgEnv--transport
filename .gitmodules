@@ -1,0 +1,21 @@
+[submodule "cpp-EventLog.git"]
+	path = cpp-EventLog.git
+	url = git@gitlab.com:interop-protocols/cpp-eventlog.git
+[submodule "cpp-json-msg.git"]
+	path = cpp-json-msg.git
+	url = git@gitlab.com:interop-protocols/cpp-json-msg.git
+[submodule "cpp-l4end-framing.git"]
+	path = cpp-l4end-framing.git
+	url = git@gitlab.com:interop-protocols/cpp-l4end-framing.git
+[submodule "cpp-msg_cache-dedup.git"]
+	path = cpp-msg_cache-dedup.git
+	url = git@github.com:knev/cpp-msg_cache-dedup.git
+[submodule "cpp-msgenv-MQTT.git"]
+	path = cpp-msgenv-MQTT.git
+	url = git@github.com:IPSME/cpp-msgenv-MQTT.git
+[submodule "cpp-protocol-Discovery.git"]
+	path = cpp-protocol-Discovery.git
+	url = git@gitlab.com:interop-protocols/cpp-protocol-Discovery.git
+[submodule "cpp-asio.git"]
+	path = cpp-asio.git
+	url = git@gitlab.com:interop-protocols/cpp-asio.git
