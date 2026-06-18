@@ -4,15 +4,19 @@
 #include <cassert>
 #include <signal.h>
 #include <string>
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif
 #include <chrono>
 using namespace std::chrono_literals;
 #include <iostream>
 #include <thread>
 #include <vector>
 
+#ifdef _WIN32
 #pragma comment(lib, "wininet.lib")
+#endif
 
 #include "msg_cache-dedup.h"
 
@@ -108,7 +112,8 @@ int main()
     sa.sa_handler = handler_sigint_;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
-    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGINT,  &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);   // so `docker stop` shuts the server down cleanly
 #else
     //signal(SIGINT, handler_sigint_);
 #endif

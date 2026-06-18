@@ -82,6 +82,19 @@ elseif (APPLE)
     # Sources are not portable yet — this branch just lets the Xcode project generate.
 
 elseif (UNIX)
-    # TODO Linux: pkg-config mosquitto / sdbus.
+    # Linux (Docker) build. Dependencies come from distro packages plus
+    # json-schema-validator built from source (not packaged in Debian):
+    #   libasio-dev  libmosquitto-dev  nlohmann-json3-dev  uuid-dev
+    find_package(Threads REQUIRED)
+    find_package(nlohmann_json_schema_validator REQUIRED)
+
+    # standalone asio (no Boost); enable the POSIX SIGINT/SIGTERM handler in main.cpp
+    target_compile_definitions(${NAME} PRIVATE ASIO_STANDALONE POSIX_SIGNAL)
+
+    target_link_libraries(${NAME} PRIVATE
+        Threads::Threads
+        mosquitto
+        uuid
+        nlohmann_json_schema_validator)
 
 endif()
