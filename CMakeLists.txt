@@ -38,8 +38,11 @@ add_executable(${NAME}
 set_target_properties(${NAME} PROPERTIES OUTPUT_NAME "${NAME}")
 target_compile_features(${NAME} PRIVATE cxx_std_20)
 
-# the participant identity used in messages == the build NAME
-target_compile_definitions(${NAME} PRIVATE BUILD_NAME="${NAME}")
+# identity + the chosen pieces, exposed to the source as string macros
+target_compile_definitions(${NAME} PRIVATE
+    BUILD_NAME="${NAME}"
+    BUILD_TRANSPORT="${TRANSPORT}"
+    BUILD_MSGENV="${MSGENV}")
 
 # expose the role to the source as ROLE_SERVER / ROLE_CLIENT
 string(TOUPPER "${ROLE}" ROLE_UC)

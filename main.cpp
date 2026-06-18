@@ -37,6 +37,12 @@ duplicate g_duplicate;
 #ifndef BUILD_NAME
 #define BUILD_NAME "reflector"
 #endif
+#ifndef BUILD_TRANSPORT
+#define BUILD_TRANSPORT "transport"
+#endif
+#ifndef BUILD_MSGENV
+#define BUILD_MSGENV "MsgEnv"
+#endif
 static constexpr const char* kpsz_PARTICIPANT_ = BUILD_NAME;          // == build NAME (-DNAME)
 static const std::string     ks_INSTANCE_      = JSON::gen_uuid();    // fresh random GUID per run
 
@@ -45,23 +51,23 @@ static constexpr const char*    kpsz_REFLECTOR_ADDRESS = "127.0.0.1";
 static constexpr unsigned short kus_REFLECTOR_PORT     = 4999;
 
 //----------------------------------------------------------------------------------------------------------------
-// asio -> MQTT : a complete message arrived from the peer; dedup, publish
+// transport -> MsgEnv : a complete message arrived from the peer; dedup, publish
 
 void on_asio_read(std::string str_msg)
 {
 	if (true == g_duplicate.exists(str_msg)) {
-		std::cerr << "asio ->| *DUP -- [" << str_msg << "]" << std::endl;
+		std::cerr << BUILD_TRANSPORT " ->| *DUP -- [" << str_msg << "]" << std::endl;
 		return;
 	}
 
-	std::cerr << "asio -> MQTT -- [" << str_msg << "]" << std::endl;
+	std::cerr << BUILD_TRANSPORT " -> " BUILD_MSGENV " -- [" << str_msg << "]" << std::endl;
 
 	if (g_ptr_ipsme)
 		g_ptr_ipsme->publish(str_msg.c_str());
 }
 
 //----------------------------------------------------------------------------------------------------------------
-// MQTT -> asio : hand the message to the transport (it frames it)
+// MsgEnv -> transport : hand the message to the transport (it frames it)
 
 class App : public Interface_App {
 public:
@@ -69,7 +75,7 @@ public:
 
 	bool handler_string_(const char* psz_msg, std::string str_msg)
 	{
-		std::cerr << "MQTT -> asio -- [" << str_msg << "]" << std::endl;
+		std::cerr << BUILD_MSGENV " -> " BUILD_TRANSPORT " -- [" << str_msg << "]" << std::endl;
 
 		g_duplicate.cache(str_msg, t_entry_context(30s));
 
