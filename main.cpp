@@ -28,8 +28,11 @@ IPSME_MsgEnv* g_ptr_ipsme = nullptr;
 
 duplicate g_duplicate;
 
-static constexpr const char* kpsz_PARTICIPANT_ = "reflector-MQTT--asio-client";
-static constexpr const char* kpsz_INSTANCE_ = "a46aab17-9833-499b-93df-8814a96d2da1";
+#ifndef BUILD_NAME
+#define BUILD_NAME "reflector"
+#endif
+static constexpr const char* kpsz_PARTICIPANT_ = BUILD_NAME;          // == build NAME (-DNAME)
+static const std::string     ks_INSTANCE_      = JSON::gen_uuid();    // fresh random GUID per run
 
 // reflector server we bridge MQTT <-> TCP with
 static constexpr const char*    kpsz_REFLECTOR_ADDRESS = "127.0.0.1";
@@ -182,7 +185,7 @@ int main()
     try {
         printf("Running ...\n");
 
-		std::unique_ptr<App> uptr_app = std::make_unique<App>(JSON::JSON_Msg::Referer(kpsz_PARTICIPANT_, kpsz_INSTANCE_));
+		std::unique_ptr<App> uptr_app = std::make_unique<App>(JSON::JSON_Msg::Referer(kpsz_PARTICIPANT_, ks_INSTANCE_));
 
 		printf("Running ...\n");
 

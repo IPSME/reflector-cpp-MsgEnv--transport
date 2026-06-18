@@ -38,6 +38,9 @@ add_executable(${NAME}
 set_target_properties(${NAME} PROPERTIES OUTPUT_NAME "${NAME}")
 target_compile_features(${NAME} PRIVATE cxx_std_20)
 
+# the participant identity used in messages == the build NAME
+target_compile_definitions(${NAME} PRIVATE BUILD_NAME="${NAME}")
+
 # project-local include dirs (portable across platforms)
 target_include_directories(${NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
