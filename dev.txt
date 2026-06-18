@@ -1,0 +1,55 @@
+
+  ● Reflector containing both MsgEnv and transport
+      // Transport = anything with .start() and .write(std::string); read bytes via the cb you give it.
+    // MsgEnv    = anything with .publish(const char*) and .subscribe(cb, void*).
+    template <typename Transport, typename MsgEnv>
+    class Reflector {
+        duplicate          _dedup;
+        std::vector<char>  _buf;
+        Transport&         _transport;
+        MsgEnv&            _msgenv;
+    public:
+        Reflector(Transport& t, MsgEnv& m) : _transport(t), _msgenv(m) {}
+
+        // asio -> msgenv  (the transport's read callback points here)
+        void on_read(const char* data, std::size_t len) {
+            l4end::deframe(&_buf, data, len, [this](std::string msg){
+                if (_dedup.exists(msg)) return;
+                _msgenv.publish(msg.c_str());
+            });
+        }
+        // msgenv -> asio
+        bool on_msg(std::string msg) {
+            _dedup.cache(msg, t_entry_context(30s));
+            _transport.write(l4end::enframe(msg));
+            return true;
+        }
+        void start() {
+            _msgenv.subscribe(&trampoline, this);   // void* user-data carries `this`
+            _transport.start();
+        }
+    private:
+        static void trampoline(const char* m, void* self) { static_cast<Reflector*>(self)->on_msg(m); }
+    };
+
+    The thin shells — the ONLY thing that differs per variant
+
+    // reflector-MQTT--asio-client/main.cpp
+    #include "cpp-reflector-core.git/reflector.hpp"
+    #include "cpp-msgenv-MQTT.git/IPSME_MsgEnv.h"
+    #include "cpp-asio.git/asio_client.h"
+
+    int main() {
+        mosquitto_lib_init();
+        IPSME_MsgEnv msgenv;
+        asio_client  transport;                       // ← client
+        Reflector    reflector(transport, msgenv);
+        transport.set_read_cb([&](const char* d, std::size_t n){ reflector.on_read(d, n); });
+        reflector.start();
+        /* run loop: msgenv.process_msgs(); */
+        mosquitto_lib_cleanup();
+    }
+    // reflector-MQTT--asio-server/main.cpp   — diff is two lines:
+    #include "cpp-asio.git/asio_server.h"
+        asio_server  transport(4999);                 // ← server (listens)
+    Swap MQTT→sdbus the same way: change one #include and link cpp-msgenv-sdbus.git. The core never changes.
