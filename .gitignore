@@ -1,0 +1,45 @@
+# ---- CMake build trees (out-of-source: `cmake -B build ...`) ----
+/build/
+/build-*/
+/out/
+
+# ---- CMake in-source leftovers (if ever configured in the project root) ----
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+_deps/
+
+# ---- generated IDE project files (Visual Studio / Xcode are produced by CMake) ----
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.xcodeproj/
+.vs/
+_DerivedData/
+[Dd]ebug/
+[Rr]elease/
+[Ww][Ii][Nn]32/
+[Xx]64/
+
+# ---- compiler / linker intermediates ----
+*.obj
+*.o
+*.pch
+*.ipch
+*.pdb
+*.idb
+*.ilk
+*.exp
+*.tlog
+*.lastbuildstate
+
+# ---- build outputs ----
+*.exe
+*.dll
+
+# ---- OS / editor junk ----
+.DS_Store
+Thumbs.db
