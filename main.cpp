@@ -15,7 +15,6 @@ using namespace std::chrono_literals;
 #pragma comment(lib, "wininet.lib")
 
 #include "msg_cache-dedup.h"
-#include "l4end-framing.h"
 
 #include "IPSME/IPSME_Bridge.hpp"
 #include "cpp-EventLog.git/InMemory_EventLog.h"
@@ -37,28 +36,23 @@ static constexpr const char*    kpsz_REFLECTOR_ADDRESS = "127.0.0.1";
 static constexpr unsigned short kus_REFLECTOR_PORT     = 4999;
 
 //----------------------------------------------------------------------------------------------------------------
-// asio -> MQTT : raw bytes arrived from the peer; deframe, dedup, publish
+// asio -> MQTT : a complete message arrived from the peer; dedup, publish
 
-std::vector<char> vch_buffer_;
-
-void on_asio_read(const char* pch_data, std::size_t szt_len)
+void on_asio_read(std::string str_msg)
 {
-	l4end::deframe(&vch_buffer_, pch_data, szt_len, [](std::string str_msg)
-	{
-		if (true == g_duplicate.exists(str_msg)) {
-			std::cerr << "asio ->| *DUP -- [" << str_msg << "]" << std::endl;
-			return;
-		}
+	if (true == g_duplicate.exists(str_msg)) {
+		std::cerr << "asio ->| *DUP -- [" << str_msg << "]" << std::endl;
+		return;
+	}
 
-		std::cerr << "asio -> MQTT -- [" << str_msg << "]" << std::endl;
+	std::cerr << "asio -> MQTT -- [" << str_msg << "]" << std::endl;
 
-		if (g_ptr_ipsme)
-			g_ptr_ipsme->publish(str_msg.c_str());
-	});
+	if (g_ptr_ipsme)
+		g_ptr_ipsme->publish(str_msg.c_str());
 }
 
 //----------------------------------------------------------------------------------------------------------------
-// MQTT -> asio : enframe and hand to the transport
+// MQTT -> asio : hand the message to the transport (it frames it)
 
 class App : public Interface_App {
 public:
@@ -71,7 +65,7 @@ public:
 		g_duplicate.cache(str_msg, t_entry_context(30s));
 
 		if (g_ptr_asio)
-			g_ptr_asio->write(l4end::enframe(str_msg));
+			g_ptr_asio->write(str_msg);
 
 		return true;
 	}
