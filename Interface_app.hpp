@@ -26,7 +26,7 @@ public:
     virtual ~Interface_App() = default;
 
     // Called when a discovery message times out
-    virtual bool handler_string_(const char* psz_msg, std::string str_msg) = 0;
+    virtual bool on_MsgEnv_msg(const char* psz_msg, std::string str_msg) = 0;
 
     const JSON::JSON_Msg::Referer& referer() const { return _referer; }
 

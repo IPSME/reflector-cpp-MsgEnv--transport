@@ -29,9 +29,6 @@ using namespace std::chrono_literals;
 // the asio TCP transport; created in main(), reached by the MQTT-side callback below
 transport_t* g_ptr_asio = nullptr;
 
-// the bridge's IPSME; wired up in main() from the bridge
-IPSME_MsgEnv* g_ptr_ipsme = nullptr;
-
 duplicate g_duplicate;
 
 #ifndef BUILD_NAME
@@ -51,29 +48,30 @@ static constexpr const char*    kpsz_REFLECTOR_ADDRESS = "127.0.0.1";
 static constexpr unsigned short kus_REFLECTOR_PORT     = 4999;
 
 //----------------------------------------------------------------------------------------------------------------
-// transport -> MsgEnv : a complete message arrived from the peer; dedup, publish
-
-void on_asio_read(std::string str_msg)
-{
-	if (true == g_duplicate.exists(str_msg)) {
-		std::cerr << BUILD_TRANSPORT " ->| *DUP -- [" << str_msg << "]" << std::endl;
-		return;
-	}
-
-	std::cerr << BUILD_TRANSPORT " -> " BUILD_MSGENV " -- [" << str_msg << "]" << std::endl;
-
-	if (g_ptr_ipsme)
-		g_ptr_ipsme->publish(str_msg.c_str());
-}
-
-//----------------------------------------------------------------------------------------------------------------
-// MsgEnv -> transport : hand the message to the transport (it frames it)
 
 class App : public Interface_App {
 public:
 	App(const JSON::JSON_Msg::Referer& referer) : Interface_App(referer) {}
 
-	bool handler_string_(const char* psz_msg, std::string str_msg)
+	//-------------
+	// transport -> MsgEnv : a complete message arrived from the peer; dedup, publish
+	void on_transport_read(std::string str_msg)
+	{
+        auto bridge = IPSME_Bridge::get_instance();
+
+		if (true == g_duplicate.exists(str_msg)) {
+			std::cerr << BUILD_TRANSPORT " ->| *DUP -- [" << str_msg << "]" << std::endl;
+			return;
+		}
+
+		std::cerr << BUILD_TRANSPORT " -> " BUILD_MSGENV " -- [" << str_msg << "]" << std::endl;
+
+        bridge->get_IPSME()->publish(str_msg.c_str());
+	}
+
+	//-------------
+	// MsgEnv -> transport : hand the message to the transport (it frames it)
+	bool on_MsgEnv_msg(const char* psz_msg, std::string str_msg)
 	{
 		std::cerr << BUILD_MSGENV " -> " BUILD_TRANSPORT " -- [" << str_msg << "]" << std::endl;
 
@@ -84,6 +82,7 @@ public:
 
 		return true;
 	}
+
 };
 
 //----------------------------------------------------------------------------------------------------------------
@@ -124,7 +123,8 @@ int main()
 
         // TCP side
 #if defined(ROLE_SERVER)
-        transport_t transport(kus_REFLECTOR_PORT, on_asio_read);   // listen + accept
+        transport_t transport(kus_REFLECTOR_PORT,
+            [app = uptr_app.get()](std::string m){ app->on_transport_read(std::move(m)); });   // listen + accept
         g_ptr_asio = &transport;
         transport.start();
 

@@ -73,8 +73,8 @@ public:
         _uptr_IPSME->unsubscribe(&_handler_static);
     }
 
-    IEventLog * const eventLogPtr() const { return _kp_IEventLog; }
-
+    IEventLog * const get_EventLog() const { return _kp_IEventLog; }
+    IPSME_MsgEnv * const get_IPSME() const { return _uptr_IPSME.get(); }
     Responder_Discovery * const protocol_Discovery() const { return _responder_Discovery.get(); }
 
 public:
@@ -160,11 +160,11 @@ public:
         // printf("%s: _uptr_IPSME->process_msgs()\n", __func__);
         _uptr_IPSME->process_msgs();
 
-        for (IEventLog::t_const_iterator it = eventLogPtr()->q_begin(); it != eventLogPtr()->q_end(); ++it)
+        for (IEventLog::t_const_iterator it = get_EventLog()->q_begin(); it != get_EventLog()->q_end(); ++it)
         {
             IEventLog::t_idx _idx_evt_i= it->first;
 
-            auto ptr_evt = std::static_pointer_cast<IEvent>(eventLogPtr()->get_Event(_idx_evt_i));
+            auto ptr_evt = std::static_pointer_cast<IEvent>(get_EventLog()->get_Event(_idx_evt_i));
             assert(ptr_evt);
             printf("%s: i[%llu] [%s]\n", __func__, _idx_evt_i, ptr_evt->type.c_str());
 
@@ -177,7 +177,7 @@ public:
             }
         }
 
-        eventLogPtr()->purge_dequeued();
+        get_EventLog()->purge_dequeued();
     }
 
 private:
