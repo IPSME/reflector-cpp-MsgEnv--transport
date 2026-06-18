@@ -18,10 +18,16 @@ using namespace std::chrono_literals;
 
 #include "IPSME/IPSME_Bridge.hpp"
 #include "cpp-EventLog.git/InMemory_EventLog.h"
-#include "cpp-asio.git/asio_client.h"
+#if defined(ROLE_SERVER)
+  #include "cpp-asio.git/asio_server.h"
+  using transport_t = asio_server;
+#else
+  #include "cpp-asio.git/asio_client.h"
+  using transport_t = asio_client;
+#endif
 
 // the asio TCP transport; created in main(), reached by the MQTT-side callback below
-asio_client* g_ptr_asio = nullptr;
+transport_t* g_ptr_asio = nullptr;
 
 // the bridge's IPSME; wired up in main() from the bridge
 IPSME_MsgEnv* g_ptr_ipsme = nullptr;
@@ -183,16 +189,25 @@ int main()
 #endif
 
     try {
-        printf("Running ...\n");
+		std::cerr << __func__ << ": " << "Connecting ..." << std::endl;
 
 		std::unique_ptr<App> uptr_app = std::make_unique<App>(JSON::JSON_Msg::Referer(kpsz_PARTICIPANT_, ks_INSTANCE_));
-
-		printf("Running ...\n");
 
 		std::unique_ptr<InMemoryMsg> _uptr_eventLog = std::make_unique<InMemoryMsg>();
 		auto bridge= IPSME_Bridge::get_instance(uptr_app.get(), _uptr_eventLog.get());
 
-        // TCP side: start with no connections (connections configured later)
+        // TCP side
+#if defined(ROLE_SERVER)
+        transport_t transport(kus_REFLECTOR_PORT, on_asio_read);   // listen + accept
+        g_ptr_asio = &transport;
+        transport.start();
+
+		std::cout << __func__ << ": " << kpsz_PARTICIPANT_ << " listening on [" << kus_REFLECTOR_PORT << "]" << std::endl;
+
+		std::cerr << __func__ << ": " << "Running ..." << std::endl;
+#else
+        // client: start with no connections (configured later)
+#endif
 
         while (!gb_quit_)
         {

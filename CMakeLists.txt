@@ -41,6 +41,10 @@ target_compile_features(${NAME} PRIVATE cxx_std_20)
 # the participant identity used in messages == the build NAME
 target_compile_definitions(${NAME} PRIVATE BUILD_NAME="${NAME}")
 
+# expose the role to the source as ROLE_SERVER / ROLE_CLIENT
+string(TOUPPER "${ROLE}" ROLE_UC)
+target_compile_definitions(${NAME} PRIVATE ROLE_${ROLE_UC})
+
 # project-local include dirs (portable across platforms)
 target_include_directories(${NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
