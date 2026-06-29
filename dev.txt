@@ -53,3 +53,32 @@
     #include "cpp-asio.git/asio_server.h"
         asio_server  transport(4999);                 // ← server (listens)
     Swap MQTT→sdbus the same way: change one #include and link cpp-msgenv-sdbus.git. The core never changes.
+
+● Worth mentioning: the names are actually still perfectly regular — the grammar just went from one token to two. Every new unit is
+  asio_<kind>_<role>:
+
+  asio_tcp_client       (kind=tcp,       role=client)
+  asio_udp_client       (kind=udp,       role=client)
+  asio_broadcast_server (kind=broadcast, role=server)
+  asio_rr_server        (kind=rr,        role=server)
+
+  So you can get the clean interpolation back — it'd just be a two-token key instead of one:
+
+  cpp-${TRANSPORT}.git/asio_${KIND}_${ROLE}.cpp
+
+  with a KIND knob (tcp/udp/broadcast/rr). That reads as nicely as the old asio_${ROLE} and is strictly more expressive.
+
+  But I'd argue the sadness is pointing at the right thing and the cure would be worse here. The old asio_${ROLE} was clean precisely because the
+  names were under-specified — one token sufficed only because client/server was the whole story. That under-specification is exactly what these
+  renames set out to kill (your call, and the right one). So the loss of the one-token map isn't a regression in the naming; it's the bill for the
+  specificity.
+
+  And the KIND knob recovers the elegance only on paper: this reflector ships exactly two variants (tcp_client, broadcast_server). A second knob
+  whose four combinations are never all exercised is machinery pretending the build is more general than it is — and the asymmetry bites immediately,
+  since KIND can't default sensibly without knowing ROLE (client wants tcp, server wants broadcast), which lands you right back at an if/else, now
+  spread across two knobs.
+
+  So my honest read: the explicit ROLE→unit if/else is the more truthful encoding now — it says "there are two supported builds, here they are"
+  instead of implying a 2×N grid. The interpolation was prettier; the if/else is more honest about what actually exists.
+
+

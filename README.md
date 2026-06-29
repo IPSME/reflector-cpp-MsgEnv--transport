@@ -15,8 +15,7 @@ checkout  →  choose MsgEnv  →  choose transport  →  choose role  →  choo
 
 ```sh
 git clone --recursive <repo>
-cmake -B build -G "Visual Studio 17 2022" -A x64 \
-      -DNAME=my-reflector -DMSGENV=MQTT -DTRANSPORT=asio -DROLE=client
+cmake -B build -G "Visual Studio 17 2022" -A x64 -DNAME=my-reflector -DMSGENV=MQTT -DTRANSPORT=asio -DROLE=client
 cmake --build build --config Debug          # -> build/Debug/my-reflector.exe
 ```
 
