@@ -19,3 +19,6 @@
 [submodule "cpp-asio.git"]
 	path = cpp-asio.git
 	url = git@gitlab.com:interop-protocols/cpp-asio.git
+[submodule "cpp-msgenv-sdbus.git"]
+	path = cpp-msgenv-sdbus.git
+	url = git@github.com:IPSME/cpp-msgenv-sdbus.git
