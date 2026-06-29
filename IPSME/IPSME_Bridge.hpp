@@ -57,6 +57,7 @@ public:
 
     IPSME_Bridge(Interface_App * const kpi_App, IEventLog * const kp_IEventLog)
         : _uptr_IPSME(std::make_unique<IPSME_MsgEnv>()),
+        _kpi_App(kpi_App),
         _kp_IEventLog(kp_IEventLog),
         _responder_Discovery(std::make_unique<Responder_Discovery>(_uptr_IPSME.get(), kpi_App, kp_IEventLog))
     {
@@ -141,6 +142,12 @@ public:
 
     void handler(IPSME_MsgEnv::t_MSG msg, void*)
     {
+        // reverse path (ME -> transport): forward every received ME message to the
+        // transport via the App. (on_transport_read = dedup+publish; on_MsgEnv_msg =
+        // cache + write to the asio transport.)
+        if (_kpi_App)
+            _kpi_App->on_MsgEnv_msg(msg, std::string(msg));
+
         try {
             if (handler_string(msg, std::string(msg)))
                 return;
@@ -185,6 +192,8 @@ private:
     inline static std::shared_ptr<IPSME_Bridge> _instance;
 
     std::unique_ptr<IPSME_MsgEnv> _uptr_IPSME;
+
+    Interface_App * const _kpi_App;
 
     IEventLog * const _kp_IEventLog;
     IEventLog::t_idx _idx_evt_i;
