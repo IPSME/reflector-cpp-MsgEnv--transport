@@ -3,7 +3,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../cpp-msgenv-MQTT.git/IPSME_MsgEnv.h"
+#include "IPSME_MsgEnv.h"
 #include "../cpp-json-msg.git/json_msg+ack.h"
 
 #define PUBLISH(msg_obj)                                     \

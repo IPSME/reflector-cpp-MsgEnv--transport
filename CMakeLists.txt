@@ -51,6 +51,7 @@ target_compile_definitions(${NAME} PRIVATE ROLE_${ROLE_UC})
 # project-local include dirs (portable across platforms)
 target_include_directories(${NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    cpp-msgenv-${MSGENV}.git
     cpp-msg_cache-dedup.git
     cpp-l4end-framing.git
     cpp-asio.git
@@ -91,9 +92,16 @@ elseif (UNIX)
     # standalone asio (no Boost); enable the POSIX SIGINT/SIGTERM handler in main.cpp
     target_compile_definitions(${NAME} PRIVATE ASIO_STANDALONE POSIX_SIGNAL)
 
+    # message-env library is conditional on the selected MSGENV
+    if (MSGENV STREQUAL "sdbus")
+        set(MSGENV_LIB systemd)        # libsystemd (sd-bus); do NOT link mosquitto
+    else()
+        set(MSGENV_LIB mosquitto)
+    endif()
+
     target_link_libraries(${NAME} PRIVATE
         Threads::Threads
-        mosquitto
+        ${MSGENV_LIB}
         uuid
         nlohmann_json_schema_validator)
 
