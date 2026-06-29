@@ -22,13 +22,13 @@ using namespace std::chrono_literals;
 #include "msg_cache-dedup.h"
 
 #include "IPSME/IPSME_Bridge.hpp"
-#include "cpp-EventLog.git/InMemory_EventLog.h"
+#include "cpp-EventLog.git/Null_EventLog.hpp"
 #if defined(ROLE_SERVER)
-  #include "cpp-asio.git/asio_server.h"
-  using transport_t = asio_server;
+  #include "cpp-asio.git/asio_broadcast_server.h"
+  using transport_t = asio_broadcast_server;
 #else
-  #include "cpp-asio.git/asio_client.h"
-  using transport_t = asio_client;
+  #include "cpp-asio.git/asio_tcp_client.h"
+  using transport_t = asio_tcp_client;
 #endif
 
 // the asio TCP transport; created in main(), reached by the MQTT-side callback below
@@ -129,7 +129,9 @@ int main(int argc, char* argv[])
 
 		std::unique_ptr<App> uptr_app = std::make_unique<App>(JSON::JSON_Msg::Referer(kpsz_PARTICIPANT_, ks_INSTANCE_));
 
-		std::unique_ptr<InMemoryMsg> _uptr_eventLog = std::make_unique<InMemoryMsg>();
+		// no event log: this reflector's only "memory" need is dedup (cpp-msg_cache-dedup / g_duplicate),
+		// so pass a no-op Null_EventLog placeholder rather than an unused InMemory_EventLog.
+		std::unique_ptr<Null_EventLog> _uptr_eventLog = std::make_unique<Null_EventLog>();
 		auto bridge= IPSME_Bridge::get_instance(uptr_app.get(), _uptr_eventLog.get());
 
         // TCP side

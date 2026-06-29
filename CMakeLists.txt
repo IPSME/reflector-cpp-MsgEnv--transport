@@ -22,14 +22,21 @@ set(MOSQUITTO  "C:/Program Files/mosquitto"                   CACHE PATH "mosqui
 
 message(STATUS "reflector: NAME=${NAME}  MSGENV=${MSGENV}  TRANSPORT=${TRANSPORT}  ROLE=${ROLE}")
 
+# the asio transport units were renamed (client -> tcp_client, server -> broadcast_server);
+# map the ROLE knob to the corresponding unit stem.
+if (ROLE STREQUAL "server")
+    set(ASIO_UNIT "asio_broadcast_server")
+else()
+    set(ASIO_UNIT "asio_tcp_client")
+endif()
+
 # ---- sources : the two swappable picks are interpolated from the knobs ----
 add_executable(${NAME}
     main.cpp
     cpp-msgenv-${MSGENV}.git/IPSME_MsgEnv.cpp            # MSGENV:    MQTT | sdbus
-    cpp-${TRANSPORT}.git/asio_${ROLE}.cpp               # TRANSPORT+ROLE: asio_client | asio_server
+    cpp-${TRANSPORT}.git/${ASIO_UNIT}.cpp               # TRANSPORT+ROLE: asio_tcp_client | asio_broadcast_server
     cpp-l4end-framing.git/l4end-framing.cpp
     cpp-msg_cache-dedup.git/msg_cache-dedup.cpp
-    cpp-EventLog.git/InMemory_EventLog.cpp
     cpp-json-msg.git/json_msg+ack.cpp
     cpp-protocol-Discovery.git/JSON_MsgDiscovery.cpp
     cpp-protocol-Discovery.git/JSON_Echo.cpp

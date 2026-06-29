@@ -1,6 +1,6 @@
 [submodule "cpp-EventLog.git"]
 	path = cpp-EventLog.git
-	url = git@gitlab.com:interop-protocols/cpp-eventlog.git
+	url = git@github.com:IPSME/cpp-EventLog.git
 [submodule "cpp-json-msg.git"]
 	path = cpp-json-msg.git
 	url = git@gitlab.com:interop-protocols/cpp-json-msg.git
