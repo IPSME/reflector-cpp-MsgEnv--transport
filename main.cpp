@@ -2,6 +2,7 @@
 //
 
 #include <cassert>
+#include <cstdlib>
 #include <signal.h>
 #include <string>
 #ifdef _WIN32
@@ -105,8 +106,13 @@ void handler_sigint_(int s)
     gb_quit_ = true;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    // optional first arg = <tcp-port> (the asio listener); default kus_REFLECTOR_PORT
+    unsigned short us_port = kus_REFLECTOR_PORT;
+    if (argc > 1)
+        us_port = static_cast<unsigned short>(std::atoi(argv[1]));
+
 #ifdef POSIX_SIGNAL
     struct sigaction sa;
     sa.sa_handler = handler_sigint_;
@@ -128,12 +134,12 @@ int main()
 
         // TCP side
 #if defined(ROLE_SERVER)
-        transport_t transport(kus_REFLECTOR_PORT,
+        transport_t transport(us_port,
             [app = uptr_app.get()](std::string m){ app->on_transport_read(std::move(m)); });   // listen + accept
         g_ptr_asio = &transport;
         transport.start();
 
-		std::cout << __func__ << ": " << kpsz_PARTICIPANT_ << " listening on [" << kus_REFLECTOR_PORT << "]" << std::endl;
+		std::cout << __func__ << ": " << kpsz_PARTICIPANT_ << " listening on [" << us_port << "]" << std::endl;
 
 		std::cerr << __func__ << ": " << "Running ..." << std::endl;
 #else
