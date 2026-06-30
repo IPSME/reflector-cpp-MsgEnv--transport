@@ -14,15 +14,22 @@ using reflector_iface::MessagingEnv::JSON_MsgCtrl;
 
 //----------------------------------------------------------------------------------------------------------------
 // Responder for the MessagingEnv `ctrl-msg` (touch) protocol. The orchestrator publishes a touch naming
-// the store participants it wants reflectors to hold connections to. THIS reflector is an asio + l4end
-// transport, so it serves ONLY participants whose protocol is "tcp+l4end" and silently drops the rest --
-// a reflector of a different transport serves those (IPSME interest management, applied per participant).
+// the store participants it wants reflectors to hold connections to. A reflector serves ONLY the
+// participants whose protocol matches the transport THIS build was compiled with -- e.g. "tcp+l4end" for
+// the asio+l4end build, a websocket protocol for a ws build -- and silently drops the rest (a reflector
+// of a different transport serves those: IPSME interest management, applied per participant). The served
+// protocol is therefore build-dependent and injected via BUILD_PROTOCOL (set by CMake from TRANSPORT).
 //----------------------------------------------------------------------------------------------------------------
+
+// build-injected: the on-wire protocol this reflector's transport speaks. Fallback = the asio+l4end value.
+#ifndef BUILD_PROTOCOL
+#define BUILD_PROTOCOL "tcp+l4end"
+#endif
 
 class Responder_MessagingEnv {
 public:
-	// the transport this reflector speaks; ctrl-msg participants of any other protocol are not ours.
-	static constexpr const char* kpsz_PROTOCOL_ = "tcp+l4end";
+	// ctrl-msg participants whose protocol != kpsz_PROTOCOL_ are not ours.
+	static constexpr const char* kpsz_PROTOCOL_ = BUILD_PROTOCOL;
 
 	Responder_MessagingEnv(IPSME_MsgEnv * const kp_IPSME, Interface_App * const kpi_App, IEventLog * const kp_IEventLog)
 		: _kp_IPSME(kp_IPSME), _kpi_App(kpi_App), _kp_IEventLog(kp_IEventLog), _referer(kpi_App->referer())
@@ -46,7 +53,7 @@ private:
 
 			std::string str_protocol = json_participant["protocol"].get<std::string>();
 
-			// interest management: this asio + l4end reflector serves only its own transport.
+			// interest management: serve only this build's transport protocol (kpsz_PROTOCOL_).
 			if (str_protocol != kpsz_PROTOCOL_) {
 				DebugPrint("%s: skip participant proto[%s] -- not %s\n", __func__, str_protocol.c_str(), kpsz_PROTOCOL_);
 				continue;
