@@ -1,0 +1,114 @@
+{
+  "$id": "https://root-interface.se/protocols/MessagingEnv",
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "schemas": {
+    "https://root-interface.se/protocols/MessagingEnv/definitions": {
+      "$id": "https://root-interface.se/protocols/MessagingEnv/definitions",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "definitions": {
+        "_v": {
+          "const": "2"
+        }
+      }
+    },
+    "https://root-interface.se/protocols/MessagingEnv/MsgCtrl": {
+      "$id": "https://root-interface.se/protocols/MessagingEnv/MsgCtrl",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "type": "object",
+      "required": [
+        "ctrl-msg",
+        "MessagingEnv"
+      ],
+      "properties": {
+        "ctrl-msg": {
+          "type": "object",
+          "required": [
+            "participants",
+            "ttl_msec"
+          ],
+          "properties": {
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "address",
+                  "protocol",
+                  "identification"
+                ],
+                "properties": {
+                  "address": {
+                    "type": "string"
+                  },
+                  "protocol": {
+                    "type": "string"
+                  },
+                  "identification": {
+                    "type": "object",
+                    "required": [
+                      "id"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "ttl_msec": {
+              "type": "integer"
+            },
+            "filter": {
+              "type": "object",
+              "required": [
+                "sha256"
+              ],
+              "properties": {
+                "sha256": {
+                  "type": "string"
+                },
+                "spec": {}
+              }
+            }
+          }
+        },
+        "MessagingEnv": {
+          "$ref": "definitions#/definitions/_v"
+        }
+      },
+      "x-base": "JSON_Msg"
+    },
+    "https://root-interface.se/protocols/MessagingEnv/MsgFilter": {
+      "$id": "https://root-interface.se/protocols/MessagingEnv/MsgFilter",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "type": "object",
+      "required": [
+        "ctrl-filter",
+        "MessagingEnv"
+      ],
+      "properties": {
+        "ctrl-filter": {
+          "type": "object",
+          "required": [
+            "sha256",
+            "wasm_b64"
+          ],
+          "properties": {
+            "sha256": {
+              "type": "string"
+            },
+            "wasm_b64": {
+              "type": "string"
+            }
+          }
+        },
+        "MessagingEnv": {
+          "$ref": "definitions#/definitions/_v"
+        }
+      },
+      "x-base": "JSON_Msg"
+    }
+  }
+}

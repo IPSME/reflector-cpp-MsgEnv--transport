@@ -1,0 +1,16 @@
+{
+  "schemas": {
+    "Discovery": { "src": "~/protocols.git/schemas.readonly/schema_Discovery.json", "sha256": "aea682b4ba09a46770418e864169d386386ba4cce569d5094dce51a4a3c61761" },
+	  "MessagingEnv": { "src": "C:\\Users\\dev\\protocols.git\\schemas.readonly\\schema_MessagingEnv.json", "sha256": "8259e34af01604c9795d3479ff71c96af0957701f9426d9a62181acb9c0a9860" }    
+  },
+  "targets": [
+    {
+      "schema-cache": "./schemas",
+      "out-cpp": ".",
+      "prefix": "interface-",
+      "namespace" : "reflector-iface",
+      "delete": true,
+      "schemas": ["Discovery", "MessagingEnv"]
+    }
+  ]
+}

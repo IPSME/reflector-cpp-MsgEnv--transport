@@ -1,0 +1,59 @@
+{
+  "$id": "https://root-interface.se/protocols/Discovery",
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "schemas": {
+    "https://root-interface.se/protocols/Discovery/definitions": {
+      "$id": "https://root-interface.se/protocols/Discovery/definitions",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "definitions": {
+        "_v": {
+          "const": "3"
+        }
+      }
+    },
+    "https://root-interface.se/protocols/Discovery/MsgDiscover": {
+      "$id": "https://root-interface.se/protocols/Discovery/MsgDiscover",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "type": "object",
+      "required": [
+        "discover",
+        "Discovery"
+      ],
+      "properties": {
+        "discover": {
+          "type": "object",
+          "required": [
+            "ttl_msec"
+          ],
+          "properties": {
+            "ttl_msec": {
+              "type": "integer"
+            }
+          }
+        },
+        "Discovery": {
+          "$ref": "definitions#/definitions/_v"
+        }
+      },
+      "x-base": "JSON_Msg"
+    },
+    "https://root-interface.se/protocols/Discovery/MsgAnnounce": {
+      "$id": "https://root-interface.se/protocols/Discovery/MsgAnnounce",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "type": "object",
+      "required": [
+        "announce",
+        "Discovery"
+      ],
+      "properties": {
+        "announce": {
+          "type": "object"
+        },
+        "Discovery": {
+          "$ref": "definitions#/definitions/_v"
+        }
+      },
+      "x-base": "JSON_MsgEffect"
+    }
+  }
+}
