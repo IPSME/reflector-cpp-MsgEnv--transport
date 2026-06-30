@@ -70,10 +70,17 @@ private:
 public:
 	bool handler_json_msg(IPSME_MsgEnv::t_MSG msg, JSON::JSON_Msg json_msg)
 	{
+#if defined(ROLE_SERVER)
+		// server role: this reflector is dialed-INTO (it accepts connections), it does not dial out, so
+		// a touch ctrl-msg is not actionable here -- do nothing on it for now (drop, per interest mgmt).
+		(void)msg; (void)json_msg;
+		return false;
+#else
 		if (JSON_MsgCtrl::validate(json_msg) && _handler_msgCtrl(msg, json_msg))
 			return true;
 
 		return false;
+#endif
 	}
 
 private:
