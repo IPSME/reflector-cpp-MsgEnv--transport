@@ -90,7 +90,7 @@ public:
 #else
 		// fan out to every store we currently hold a connection to (the touch leases).
 		for (auto& pair_conn : _map_connections)
-			pair_conn.second->write(str_msg);
+			pair_conn.second.uptr_client->write(str_msg);
 #endif
 
 		return true;
@@ -99,11 +99,15 @@ public:
 	//-------------
 	// MessagingEnv touch : dial a connection to the named store on first touch; on a repeat touch the
 	// existing connection is already kept alive (asio_tcp_client self-reconnects), so it is a no-op.
-	void touch(const std::string& str_address, const std::string& str_id, int64_t /*i64_ttl_msec*/) override
+	void touch(const std::string& str_address, const std::string& str_id, int64_t i64_ttl_msec) override
 	{
 #if !defined(ROLE_SERVER)
-		if (_map_connections.count(str_id)) {
-			std::cerr << "touch: connection already live for [" << str_id << "]" << std::endl;
+		auto tp_expires = std::chrono::steady_clock::now() + std::chrono::milliseconds(i64_ttl_msec);
+
+		// already connected? restamp the lease (keep-alive) -- the connection self-reconnects.
+		auto it = _map_connections.find(str_id);
+		if (it != _map_connections.end()) {
+			it->second.tp_expires = tp_expires;
 			return;
 		}
 
@@ -121,14 +125,38 @@ public:
 		auto uptr_conn = std::make_unique<asio_tcp_client>(str_host, us_port,
 			[this](std::string m){ on_transport_read(std::move(m)); });
 		uptr_conn->start();
-		_map_connections.emplace(str_id, std::move(uptr_conn));
+		_map_connections.emplace(str_id, Connection{ std::move(uptr_conn), tp_expires });
+#endif
+	}
+
+	//-------------
+	// lease sweep : drop any connection whose lease has lapsed (no touch within its ttl_msec). Called
+	// from the main loop. Erasing runs the asio_tcp_client dtor, which stops the io thread + closes.
+	void sweep_leases()
+	{
+#if !defined(ROLE_SERVER)
+		auto tp_now = std::chrono::steady_clock::now();
+		for (auto it = _map_connections.begin(); it != _map_connections.end(); ) {
+			if (tp_now >= it->second.tp_expires) {
+				std::cerr << "lease expired -> disconnecting store [" << it->first << "]" << std::endl;
+				it = _map_connections.erase(it);
+			}
+			else
+				++it;
+		}
 #endif
 	}
 
 #if !defined(ROLE_SERVER)
 private:
-	// store_id -> the asio_tcp_client holding its connection (dialed on first touch, kept alive after).
-	std::map<std::string, std::unique_ptr<asio_tcp_client>> _map_connections;
+	struct Connection {
+		std::unique_ptr<asio_tcp_client>      uptr_client;
+		std::chrono::steady_clock::time_point tp_expires;
+	};
+
+	// store_id -> its held connection + lease deadline: dialed on first touch, restamped on each touch,
+	// dropped by sweep_leases() once the lease lapses.
+	std::map<std::string, Connection> _map_connections;
 #endif
 
 };
@@ -196,6 +224,7 @@ int main(int argc, char* argv[])
             std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Sleep for 100 milliseconds
 
             bridge->process_msgs();
+            uptr_app->sweep_leases();   // drop connections whose touch-lease has lapsed
         }
     }
     catch (...) {

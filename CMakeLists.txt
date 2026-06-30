@@ -30,6 +30,15 @@ else()
     set(ASIO_UNIT "asio_tcp_client")
 endif()
 
+# the on-wire protocol this reflector's transport speaks -- the MessagingEnv touch filter serves only
+# participants of THIS protocol. It is a property of the chosen TRANSPORT, so it is derived here and
+# injected into the source as BUILD_PROTOCOL.
+if (TRANSPORT STREQUAL "ws")
+    set(PROTOCOL "ws")          # TODO: confirm the exact ws wire-protocol string when the ws transport lands
+else()
+    set(PROTOCOL "tcp+l4end")   # asio TCP + l4end framing
+endif()
+
 # ---- sources : the two swappable picks are interpolated from the knobs ----
 add_executable(${NAME}
     main.cpp
@@ -49,7 +58,8 @@ target_compile_features(${NAME} PRIVATE cxx_std_20)
 target_compile_definitions(${NAME} PRIVATE
     BUILD_NAME="${NAME}"
     BUILD_TRANSPORT="${TRANSPORT}"
-    BUILD_MSGENV="${MSGENV}")
+    BUILD_MSGENV="${MSGENV}"
+    BUILD_PROTOCOL="${PROTOCOL}")
 
 # expose the role to the source as ROLE_SERVER / ROLE_CLIENT
 string(TOUPPER "${ROLE}" ROLE_UC)
