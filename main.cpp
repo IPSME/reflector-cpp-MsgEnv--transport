@@ -14,6 +14,8 @@ using namespace std::chrono_literals;
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <map>
+#include <memory>
 
 #ifdef _WIN32
 #pragma comment(lib, "wininet.lib")
@@ -82,11 +84,52 @@ public:
 
 		g_duplicate.cache(str_msg, t_entry_context(30s));
 
+#if defined(ROLE_SERVER)
 		if (g_ptr_asio)
 			g_ptr_asio->write(str_msg);
+#else
+		// fan out to every store we currently hold a connection to (the touch leases).
+		for (auto& pair_conn : _map_connections)
+			pair_conn.second->write(str_msg);
+#endif
 
 		return true;
 	}
+
+	//-------------
+	// MessagingEnv touch : dial a connection to the named store on first touch; on a repeat touch the
+	// existing connection is already kept alive (asio_tcp_client self-reconnects), so it is a no-op.
+	void touch(const std::string& str_address, const std::string& str_id, int64_t /*i64_ttl_msec*/) override
+	{
+#if !defined(ROLE_SERVER)
+		if (_map_connections.count(str_id)) {
+			std::cerr << "touch: connection already live for [" << str_id << "]" << std::endl;
+			return;
+		}
+
+		// the touch address is "host:port"; asio_tcp_client takes host + port separately.
+		auto zt_colon = str_address.find(':');
+		if (zt_colon == std::string::npos) {
+			std::cerr << "touch: address [" << str_address << "] has no :port -- cannot dial [" << str_id << "]" << std::endl;
+			return;
+		}
+		std::string    str_host = str_address.substr(0, zt_colon);
+		unsigned short us_port  = static_cast<unsigned short>(std::atoi(str_address.substr(zt_colon + 1).c_str()));
+
+		std::cerr << "touch: dialing store [" << str_id << "] at [" << str_host << ":" << us_port << "]" << std::endl;
+
+		auto uptr_conn = std::make_unique<asio_tcp_client>(str_host, us_port,
+			[this](std::string m){ on_transport_read(std::move(m)); });
+		uptr_conn->start();
+		_map_connections.emplace(str_id, std::move(uptr_conn));
+#endif
+	}
+
+#if !defined(ROLE_SERVER)
+private:
+	// store_id -> the asio_tcp_client holding its connection (dialed on first touch, kept alive after).
+	std::map<std::string, std::unique_ptr<asio_tcp_client>> _map_connections;
+#endif
 
 };
 

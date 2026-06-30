@@ -34,6 +34,7 @@
 #include "../cpp-EventLog.git/InMemory_EventLog_ext.hpp"
 
 #include "Responder_Discovery.hpp"
+#include "Responder_MessagingEnv.hpp"
 
 class IPSME_Bridge {
 public:
@@ -59,7 +60,8 @@ public:
         : _uptr_IPSME(std::make_unique<IPSME_MsgEnv>()),
         _kpi_App(kpi_App),
         _kp_IEventLog(kp_IEventLog),
-        _responder_Discovery(std::make_unique<Responder_Discovery>(_uptr_IPSME.get(), kpi_App, kp_IEventLog))
+        _responder_Discovery(std::make_unique<Responder_Discovery>(_uptr_IPSME.get(), kpi_App, kp_IEventLog)),
+        _responder_MessagingEnv(std::make_unique<Responder_MessagingEnv>(_uptr_IPSME.get(), kpi_App, kp_IEventLog))
     {
         _idx_evt_i= 0;
 
@@ -77,6 +79,7 @@ public:
     IEventLog * const get_EventLog() const { return _kp_IEventLog; }
     IPSME_MsgEnv * const get_IPSME() const { return _uptr_IPSME.get(); }
     Responder_Discovery * const protocol_Discovery() const { return _responder_Discovery.get(); }
+    Responder_MessagingEnv * const protocol_MessagingEnv() const { return _responder_MessagingEnv.get(); }
 
 public:
     bool handler_json_msgAck(IPSME_MsgEnv::t_MSG msg, JSON::JSON_MsgAck json_msgAck)
@@ -110,6 +113,9 @@ public:
         // printf("%s: [%s]\n", __func__, json_msg.to_string().c_str());
 
         if (_responder_Discovery->handler_json_msg(msg, json_msg))
+            return true;
+
+        if (_responder_MessagingEnv->handler_json_msg(msg, json_msg))
             return true;
 
         return false;
@@ -199,6 +205,7 @@ private:
     IEventLog::t_idx _idx_evt_i;
 
     std::unique_ptr<Responder_Discovery> _responder_Discovery;
+    std::unique_ptr<Responder_MessagingEnv> _responder_MessagingEnv;
 
     // this is the reason IPSME_Bridge is a singleton
     static void _handler_static(const char* psz_msg, void* p_void) {
