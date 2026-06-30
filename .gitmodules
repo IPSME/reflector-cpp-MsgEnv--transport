@@ -22,3 +22,6 @@
 [submodule "cpp-msgenv-sdbus.git"]
 	path = cpp-msgenv-sdbus.git
 	url = git@github.com:IPSME/cpp-msgenv-sdbus.git
+[submodule "cpp-iface-gen.git"]
+	path = cpp-iface-gen.git
+	url = git@gitlab.com:interop-protocols/cpp-iface-gen.git
