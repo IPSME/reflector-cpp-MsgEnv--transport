@@ -13,9 +13,6 @@
 [submodule "cpp-msgenv-MQTT.git"]
 	path = cpp-msgenv-MQTT.git
 	url = git@github.com:IPSME/cpp-msgenv-MQTT.git
-[submodule "cpp-protocol-Discovery.git"]
-	path = cpp-protocol-Discovery.git
-	url = git@gitlab.com:interop-protocols/cpp-protocol-Discovery.git
 [submodule "cpp-asio.git"]
 	path = cpp-asio.git
 	url = git@gitlab.com:interop-protocols/cpp-asio.git
