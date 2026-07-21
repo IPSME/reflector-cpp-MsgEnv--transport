@@ -7,12 +7,12 @@
       "$schema": "https://json-schema.org/draft/2019-09/schema",
       "definitions": {
         "_v": {
-          "const": "3"
+          "const": "4"
         }
       }
     },
-    "https://root-interface.se/protocols/Discovery/MsgDiscover": {
-      "$id": "https://root-interface.se/protocols/Discovery/MsgDiscover",
+    "https://root-interface.se/protocols/Discovery/JSON_MsgDiscover": {
+      "$id": "https://root-interface.se/protocols/Discovery/JSON_MsgDiscover",
       "$schema": "https://json-schema.org/draft/2019-09/schema",
       "type": "object",
       "required": [
@@ -37,8 +37,8 @@
       },
       "x-base": "JSON_Msg"
     },
-    "https://root-interface.se/protocols/Discovery/MsgAnnounce": {
-      "$id": "https://root-interface.se/protocols/Discovery/MsgAnnounce",
+    "https://root-interface.se/protocols/Discovery/JSON_EfktAnnounce": {
+      "$id": "https://root-interface.se/protocols/Discovery/JSON_EfktAnnounce",
       "$schema": "https://json-schema.org/draft/2019-09/schema",
       "type": "object",
       "required": [
@@ -53,7 +53,7 @@
           "$ref": "definitions#/definitions/_v"
         }
       },
-      "x-base": "JSON_MsgEffect"
+      "x-base": "JSON_Efkt"
     }
   }
 }

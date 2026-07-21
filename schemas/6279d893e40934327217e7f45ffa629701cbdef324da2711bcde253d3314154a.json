@@ -1,0 +1,32 @@
+{
+  "$id": "https://root-interface.se/protocols/Echo",
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "schemas": {
+    "https://root-interface.se/protocols/Echo/EchoRequest": {
+      "$id": "https://root-interface.se/protocols/Echo/EchoRequest",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "referer": {
+            "type": "object",
+            "properties": {
+              "participant": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "https://root-interface.se/protocols/Echo/EchoResponse": {
+      "$id": "https://root-interface.se/protocols/Echo/EchoResponse",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}

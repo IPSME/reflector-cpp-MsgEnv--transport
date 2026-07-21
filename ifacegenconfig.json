@@ -1,16 +1,17 @@
 {
   "schemas": {
-    "Discovery": { "src": "~/protocols.git/schemas.readonly/schema_Discovery.json", "sha256": "aea682b4ba09a46770418e864169d386386ba4cce569d5094dce51a4a3c61761" },
-	  "MessagingEnv": { "src": "C:\\Users\\dev\\protocols.git\\schemas.readonly\\schema_MessagingEnv.json", "sha256": "8259e34af01604c9795d3479ff71c96af0957701f9426d9a62181acb9c0a9860" }    
+    "Echo": { "src": "$HOME\\protocols.git\\schemas.readonly\\schema_Echo.json", "sha256": "6279d893e40934327217e7f45ffa629701cbdef324da2711bcde253d3314154a" },
+    "Discovery": { "src": "$HOME\\protocols.git\\schemas.readonly\\schema_Discovery.json", "sha256": "4203809297b294c3573685173d4187023a728e473cfd6fc18769d3953e211c27" },
+    "MessagingEnv": { "src": "$HOME\\protocols.git\\schemas.readonly\\schema_MessagingEnv.json", "sha256": "d6dd578f2f33e6503cbbf3338384aaad2f23ca681a6fb24be3207487e5a949b0" }
   },
   "targets": [
     {
       "schema-cache": "./schemas",
-      "out-cpp": ".",
+      "out-cpp": "./generated",
       "prefix": "interface-",
       "namespace" : "reflector-iface",
       "delete": true,
-      "schemas": ["Discovery", "MessagingEnv"]
+      "schemas": [ "Echo", "Discovery", "MessagingEnv" ]
     }
   ]
 }

@@ -7,12 +7,12 @@
       "$schema": "https://json-schema.org/draft/2019-09/schema",
       "definitions": {
         "_v": {
-          "const": "2"
+          "const": "4"
         }
       }
     },
-    "https://root-interface.se/protocols/MessagingEnv/MsgCtrl": {
-      "$id": "https://root-interface.se/protocols/MessagingEnv/MsgCtrl",
+    "https://root-interface.se/protocols/MessagingEnv/JSON_MsgCtrl": {
+      "$id": "https://root-interface.se/protocols/MessagingEnv/JSON_MsgCtrl",
       "$schema": "https://json-schema.org/draft/2019-09/schema",
       "type": "object",
       "required": [
@@ -30,31 +30,7 @@
             "participants": {
               "type": "array",
               "items": {
-                "type": "object",
-                "required": [
-                  "address",
-                  "protocol",
-                  "identification"
-                ],
-                "properties": {
-                  "address": {
-                    "type": "string"
-                  },
-                  "protocol": {
-                    "type": "string"
-                  },
-                  "identification": {
-                    "type": "object",
-                    "required": [
-                      "id"
-                    ],
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
+                "type": "object"
               }
             },
             "ttl_msec": {
@@ -80,8 +56,36 @@
       },
       "x-base": "JSON_Msg"
     },
-    "https://root-interface.se/protocols/MessagingEnv/MsgFilter": {
-      "$id": "https://root-interface.se/protocols/MessagingEnv/MsgFilter",
+    "https://root-interface.se/protocols/MessagingEnv/JSON_AckCtrl": {
+      "$id": "https://root-interface.se/protocols/MessagingEnv/JSON_AckCtrl",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "type": "object",
+      "required": [
+        "MessagingEnv"
+      ],
+      "properties": {
+        "ack": {
+          "type": "object",
+          "required": [
+            "participants"
+          ],
+          "properties": {
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "MessagingEnv": {
+          "$ref": "definitions#/definitions/_v"
+        }
+      },
+      "x-base": "JSON_Ack"
+    },
+    "https://root-interface.se/protocols/MessagingEnv/JSON_MsgFilter": {
+      "$id": "https://root-interface.se/protocols/MessagingEnv/JSON_MsgFilter",
       "$schema": "https://json-schema.org/draft/2019-09/schema",
       "type": "object",
       "required": [
