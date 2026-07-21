@@ -47,8 +47,6 @@ add_executable(${NAME}
     cpp-l4end-framing.git/l4end-framing.cpp
     cpp-msg_cache-dedup.git/msg_cache-dedup.cpp
     cpp-json-msg.git/json_msg+ack.cpp
-    cpp-protocol-Discovery.git/JSON_MsgDiscovery.cpp
-    cpp-protocol-Discovery.git/JSON_Echo.cpp
 )
 
 set_target_properties(${NAME} PROPERTIES OUTPUT_NAME "${NAME}")

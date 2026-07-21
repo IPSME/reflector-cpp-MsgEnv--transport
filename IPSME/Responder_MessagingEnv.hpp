@@ -8,9 +8,7 @@
 
 #include "../g_.hpp"
 #include "../cpp-EventLog.git/IEventLog.hpp"
-#include "../interface-MessagingEnv.h"
-
-using reflector_iface::MessagingEnv::JSON_MsgCtrl;
+#include "../generated/interface-MessagingEnv.h"
 
 //----------------------------------------------------------------------------------------------------------------
 // Responder for the MessagingEnv `ctrl-msg` (touch) protocol. The orchestrator publishes a touch naming
@@ -27,6 +25,9 @@ using reflector_iface::MessagingEnv::JSON_MsgCtrl;
 #endif
 
 class Responder_MessagingEnv {
+	// generated-interface type, scoped to this responder (no namespace leak into includers)
+	using JSON_MsgCtrl = reflector_iface::MessagingEnv::JSON_MsgCtrl;
+
 public:
 	// ctrl-msg participants whose protocol != kpsz_PROTOCOL_ are not ours.
 	static constexpr const char* kpsz_PROTOCOL_ = BUILD_PROTOCOL;
