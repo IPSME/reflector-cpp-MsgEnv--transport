@@ -82,7 +82,7 @@ public:
     Responder_MessagingEnv * const protocol_MessagingEnv() const { return _responder_MessagingEnv.get(); }
 
 public:
-    bool handler_json_msgAck(IPSME_MsgEnv::t_MSG msg, JSON::JSON_MsgAck json_msgAck)
+    bool handler_json_ack(IPSME_MsgEnv::t_MSG msg, JSON::JSON_Ack json_ack)
     {
         // printf("%s: [%s]\n", __func__, json_msgAck_msg.to_string().c_str());
 
@@ -92,9 +92,9 @@ public:
         return false;
     }
 
-    bool handler_json_msgEffect(IPSME_MsgEnv::t_MSG msg, JSON::JSON_MsgEffect json_msgEffect)
+    bool handler_json_efkt(IPSME_MsgEnv::t_MSG msg, JSON::JSON_Efkt json_efkt)
     {
-        if (JSON::JSON_MsgAck::validate(json_msgEffect) && handler_json_msgAck(msg, json_msgEffect))
+        if (JSON::JSON_Ack::validate(json_efkt) && handler_json_ack(msg, json_efkt))
             return true;
 
         // printf("%s: [%s]\n", __func__, json_msg_msg.to_string().c_str());
@@ -107,7 +107,7 @@ public:
 
     bool handler_json_msg(IPSME_MsgEnv::t_MSG msg, JSON::JSON_Msg json_msg)
     {
-        if (JSON::JSON_MsgEffect::validate(json_msg) && handler_json_msgEffect(msg, json_msg))
+        if (JSON::JSON_Efkt::validate(json_msg) && handler_json_efkt(msg, json_msg))
             return true;
 
         // printf("%s: [%s]\n", __func__, json_msg.to_string().c_str());
