@@ -16,6 +16,7 @@ using namespace std::chrono_literals;
 #include <vector>
 #include <map>
 #include <memory>
+#include <atomic>
 
 #ifdef _WIN32
 #pragma comment(lib, "wininet.lib")
@@ -97,9 +98,9 @@ public:
 	}
 
 	//-------------
-	// MessagingEnv touch : dial a connection to the named store on first touch; on a repeat touch the
-	// existing connection is already kept alive (asio_tcp_client self-reconnects), so it is a no-op.
-	void touch(const std::string& str_address, const std::string& str_id, int64_t i64_ttl_msec) override
+	// MessagingEnv touch : dial a connection to the named store on first touch (returns true -- a NEW dial);
+	// on a repeat touch the existing connection is kept alive (restamp) -- a no-op returning false.
+	bool touch(const std::string& str_address, const std::string& str_id, int64_t i64_ttl_msec) override
 	{
 #if !defined(ROLE_SERVER)
 		auto tp_expires = std::chrono::steady_clock::now() + std::chrono::milliseconds(i64_ttl_msec);
@@ -108,24 +109,48 @@ public:
 		auto it = _map_connections.find(str_id);
 		if (it != _map_connections.end()) {
 			it->second.tp_expires = tp_expires;
-			return;
+			return false;   // keep-alive restamp -- no new dial
 		}
 
 		// the touch address is "host:port"; asio_tcp_client takes host + port separately.
 		auto zt_colon = str_address.find(':');
 		if (zt_colon == std::string::npos) {
 			std::cerr << "touch: address [" << str_address << "] has no :port -- cannot dial [" << str_id << "]" << std::endl;
-			return;
+			return false;
 		}
 		std::string    str_host = str_address.substr(0, zt_colon);
 		unsigned short us_port  = static_cast<unsigned short>(std::atoi(str_address.substr(zt_colon + 1).c_str()));
 
 		std::cerr << "touch: dialing store [" << str_id << "] at [" << str_host << ":" << us_port << "]" << std::endl;
 
+		// connected-flag shared with the asio connect callback: the callback (io thread) sets it once the dial
+		// settles; is_connected() (main thread) reads it. shared_ptr so a late callback after the lease is swept
+		// just sets a now-detached flag rather than touching a freed Connection.
+		auto sptr_connected = std::make_shared<std::atomic<bool>>(false);
+
 		auto uptr_conn = std::make_unique<asio_tcp_client>(str_host, us_port,
-			[this](std::string m){ on_transport_read(std::move(m)); });
+			[this](std::string m){ on_transport_read(std::move(m)); },
+			[sptr_connected](){ sptr_connected->store(true); });
 		uptr_conn->start();
-		_map_connections.emplace(str_id, Connection{ std::move(uptr_conn), tp_expires });
+		_map_connections.emplace(str_id, Connection{ std::move(uptr_conn), tp_expires, sptr_connected });
+		return true;   // newly dialed
+#else
+		(void)str_address; (void)str_id; (void)i64_ttl_msec;
+		return false;
+#endif
+	}
+
+	//-------------
+	// true once the asio connect for str_id's dial has completed (the store is reachable); false while still
+	// dialing or unknown. The MessagingEnv responder polls this to ack a touch only after its dial has settled.
+	bool is_connected(const std::string& str_id) const override
+	{
+#if !defined(ROLE_SERVER)
+		auto it = _map_connections.find(str_id);
+		return it != _map_connections.end() && it->second.sptr_connected && it->second.sptr_connected->load();
+#else
+		(void)str_id;
+		return false;
 #endif
 	}
 
@@ -152,6 +177,7 @@ private:
 	struct Connection {
 		std::unique_ptr<asio_tcp_client>      uptr_client;
 		std::chrono::steady_clock::time_point tp_expires;
+		std::shared_ptr<std::atomic<bool>>    sptr_connected;   // set true by the asio connect callback (io thread)
 	};
 
 	// store_id -> its held connection + lease deadline: dialed on first touch, restamped on each touch,
@@ -224,6 +250,7 @@ int main(int argc, char* argv[])
             std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Sleep for 100 milliseconds
 
             bridge->process_msgs();
+            bridge->protocol_MessagingEnv()->emit_acks();   // ack touches whose new dial has now settled
             uptr_app->sweep_leases();   // drop connections whose touch-lease has lapsed
         }
     }

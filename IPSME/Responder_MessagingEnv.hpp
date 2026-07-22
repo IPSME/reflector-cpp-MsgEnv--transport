@@ -1,7 +1,9 @@
 
 #pragma once
 
+#include <cassert>
 #include <cstdint>
+#include <map>
 #include <string>
 
 #include <nlohmann/json.hpp>
@@ -25,8 +27,9 @@
 #endif
 
 class Responder_MessagingEnv {
-	// generated-interface type, scoped to this responder (no namespace leak into includers)
+	// generated-interface types, scoped to this responder (no namespace leak into includers)
 	using JSON_MsgCtrl = reflector_iface::MessagingEnv::JSON_MsgCtrl;
+	using JSON_AckCtrl = reflector_iface::MessagingEnv::JSON_AckCtrl;
 
 public:
 	// ctrl-msg participants whose protocol != kpsz_PROTOCOL_ are not ours.
@@ -60,16 +63,32 @@ private:
 				continue;
 			}
 
-			std::string str_address = json_participant["address"].get<std::string>();
-			std::string str_id      = json_participant["identification"]["id"].get<std::string>();
+			// the participant IS the Discovery-svc cxn-pt { protocol, address, port }: dial address:port, and
+			// derive the connection/lease key as protocol://address:port (no separate identification on the
+			// wire). port is a string|integer union (ConnectionPoint schema) -- normalise it to a string.
+			std::string str_host  = json_participant["address"].get<std::string>();
+			auto        json_port = json_participant["port"];
+			std::string str_port  = json_port.is_string() ? json_port.get<std::string>() : std::to_string(json_port.get<int64_t>());
+			std::string str_address = str_host + ":" + str_port;
+			std::string str_id      = str_protocol + "://" + str_address;
 
 			printf("%s: touch served [%s] proto[%s] id[%s] ttl_msec[%lld]\n",
 			       __func__, str_address.c_str(), str_protocol.c_str(), str_id.c_str(), (long long)i64_ttl_msec);
 
-			// hand the lease to the App, which owns the asio transport: it dials a connection to the
-			// store on first touch and keeps the existing one alive on subsequent touches.
-			if (_kpi_App)
-				_kpi_App->touch(str_address, str_id, i64_ttl_msec);
+			// hand the lease to the App, which owns the asio transport: it dials a connection to the store on
+			// first touch and keeps the existing one alive on subsequent touches. A NEW dial (touch()==true)
+			// parks a pending ack for this store; emit_acks() publishes it once the dial SETTLES, so the
+			// orchestrator releases its parked query only when the store is actually reachable. Renewals
+			// (touch()==false) draw no ack -- they add no new connection.
+			if (_kpi_App && _kpi_App->touch(str_address, str_id, i64_ttl_msec)) {
+				// slice to the base nlohmann::json explicitly: constructing a json member from a value DERIVED
+				// from json (JSON_MsgCtrl / JSON_) otherwise binds json's serializing ctor, not its copy ctor
+				// (which throws type_error.302).
+				_map_pending_ack[str_id] = Pending{
+					static_cast<const nlohmann::json&>(json_msgCtrl),
+					static_cast<const nlohmann::json&>(json_participant)
+				};
+			}
 		}
 
 		return true;
@@ -91,7 +110,46 @@ public:
 #endif
 	}
 
+	// Publish the "connections handled" ack for any pending new-dial whose connection has now SETTLED. Driven
+	// from the main loop (once per tick). Per store: one JSON_AckCtrl, _cause = the causing touch, and
+	// ack.participants = [that store's participant]. The orchestrator releases its parked query per ack and
+	// dedups downstream; a store that never connects simply never acks (its query TTL-expires there).
+	void emit_acks()
+	{
+#if !defined(ROLE_SERVER)
+		for (auto it = _map_pending_ack.begin(); it != _map_pending_ack.end(); ) {
+			if (_kpi_App && _kpi_App->is_connected(it->first)) {
+				_publish_ack(it->second.json_touch, it->second.json_participant);
+				it = _map_pending_ack.erase(it);
+			}
+			else
+				++it;
+		}
+#endif
+	}
+
 private:
+	// build + publish JSON_AckCtrl: _cause = the whole causing touch (standing convention); ack{ok:true} from
+	// the base, then add the handled participant + the MessagingEnv version so it validates as a JSON_AckCtrl.
+	void _publish_ack(const nlohmann::json& json_touch, const nlohmann::json& json_participant)
+	{
+		JSON::JSON_Ack json_ack = JSON::JSON_Ack::create_with_cause_Ok(json_touch, true);
+		json_ack["ack"]["participants"] = nlohmann::json::array({ json_participant });
+		json_ack["MessagingEnv"] = reflector_iface::MessagingEnv::VERSION;
+
+		JSON_AckCtrl json_ackCtrl(json_ack);
+		assert(JSON_AckCtrl::validate(json_ackCtrl));
+		PUBLISH(json_ackCtrl);
+	}
+
+	// a new-dial awaiting its connect to settle before we ack the causing touch.
+	struct Pending {
+		nlohmann::json json_touch;         // the causing ctrl-msg -> _cause of the ack
+		nlohmann::json json_participant;   // this store's participant record -> echoed in ack.participants
+	};
+	// store id -> its pending ack; added on a new dial, erased once emitted (its connection settled).
+	std::map<std::string, Pending> _map_pending_ack;
+
 	IPSME_MsgEnv * const _kp_IPSME;
 	Interface_App * const _kpi_App;
 	IEventLog * const _kp_IEventLog;

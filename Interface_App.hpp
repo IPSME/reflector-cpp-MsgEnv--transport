@@ -30,8 +30,13 @@ public:
 
     // MessagingEnv touch: ensure a live transport connection to the named server -- dial it if we do
     // not already hold one, otherwise a keep-alive no-op (the connection self-reconnects). i64_ttl_msec
-    // is the lease window (for future idle-expiry of the connection).
-    virtual void touch(const std::string& str_address, const std::string& str_id, int64_t i64_ttl_msec) = 0;
+    // is the lease window (for future idle-expiry of the connection). Returns TRUE iff this touch started a
+    // NEW dial (so the caller can await its settling + ack it); FALSE on a keep-alive restamp / no-op.
+    virtual bool touch(const std::string& str_address, const std::string& str_id, int64_t i64_ttl_msec) = 0;
+
+    // true once a live transport connection to str_id is established (the asio connect completed); false while
+    // still dialing or unknown. Lets the MessagingEnv responder ack a touch only after its new dial has SETTLED.
+    virtual bool is_connected(const std::string& str_id) const = 0;
 
     const JSON::JSON_Msg::Referer& referer() const { return _referer; }
 
