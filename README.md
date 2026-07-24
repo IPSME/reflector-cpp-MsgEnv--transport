@@ -76,6 +76,23 @@ cmake --build build --config Debug                                       # repea
 Repeated builds need zero `-D`. You only touch `-D` again when you want to **change** a knob
 (or clean + re-edit the defaults).
 
+### Debug vs Release — **run the Release build**
+
+The `--config Debug` above is fine for the compile loop, but the **Debug binary segfaults on
+startup and cannot be run** (observed: it dies immediately with an access violation before it
+connects to the broker). Build and run **Release**:
+
+```sh
+cmake --build build --config Release        # -> build/Release/<NAME>.exe
+```
+
+Why: the vendored runtime DLLs — mosquitto (`C:/Program Files/mosquitto`) and the vcpkg
+`x64-windows` tree (nlohmann-json-schema-validator, openssl) — are **Release** builds. An MSVC
+Debug exe (`/MDd`, `_ITERATOR_DEBUG_LEVEL=2`) loading Release (`/MD`) DLLs is a CRT /
+iterator-debug ABI mismatch, which crashes the moment a std type crosses that boundary.
+Release-against-Release matches, so **the run binary is always `build/Release/<NAME>.exe`**.
+(To run Debug you'd need Debug builds of every vendored DLL — not worth it; build Release.)
+
 **Editing the `set(... CACHE ...)` defaults works, but only on a *fresh* configure.** That's
 the catch: `CACHE STRING` means "use this *unless already cached*." So if `build/` already
 exists, editing `set(NAME "foo" ...)` is ignored — the old cached value wins. To make an
