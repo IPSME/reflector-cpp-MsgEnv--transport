@@ -15,15 +15,19 @@
 //----------------------------------------------------------------------------------------------------------------
 // Responder for the MessagingEnv `ctrl-msg` (touch) protocol. The orchestrator publishes a touch naming
 // the store participants it wants reflectors to hold connections to. A reflector serves ONLY the
-// participants whose protocol matches the transport THIS build was compiled with -- e.g. "tcp+l4end" for
-// the asio+l4end build, a websocket protocol for a ws build -- and silently drops the rest (a reflector
+// participants whose protocol matches the transport THIS build was compiled with -- e.g. "ipsme+tcp+l4end"
+// for the asio+l4end build, a websocket protocol for a ws build -- and silently drops the rest (a reflector
 // of a different transport serves those: IPSME interest management, applied per participant). The served
-// protocol is therefore build-dependent and injected via BUILD_PROTOCOL (set by CMake from TRANSPORT).
+// protocol is therefore build-dependent and injected via BUILD_PROTOCOL1 + BUILD_PROTOCOL2 (set by
+// CMake from TRANSPORT): two accepted wire spellings of the SAME protocol, PROTOCOL1 canonical.
 //----------------------------------------------------------------------------------------------------------------
 
-// build-injected: the on-wire protocol this reflector's transport speaks. Fallback = the asio+l4end value.
-#ifndef BUILD_PROTOCOL
-#define BUILD_PROTOCOL "tcp+l4end"
+// build-injected: the on-wire protocol this reflector's transport speaks. Fallback = the asio+l4end values.
+#ifndef BUILD_PROTOCOL1
+#define BUILD_PROTOCOL1 "ipsme+tcp+l4end"
+#endif
+#ifndef BUILD_PROTOCOL2
+#define BUILD_PROTOCOL2 "tcp+l4end"
 #endif
 
 class Responder_MessagingEnv {
@@ -32,8 +36,9 @@ class Responder_MessagingEnv {
 	using JSON_AckCtrl = reflector_iface::MessagingEnv::JSON_AckCtrl;
 
 public:
-	// ctrl-msg participants whose protocol != kpsz_PROTOCOL_ are not ours.
-	static constexpr const char* kpsz_PROTOCOL_ = BUILD_PROTOCOL;
+	// ctrl-msg participants whose protocol is neither kpsz_PROTOCOL1_ nor kpsz_PROTOCOL2_ are not ours.
+	static constexpr const char* kpsz_PROTOCOL1_ = BUILD_PROTOCOL1;
+	static constexpr const char* kpsz_PROTOCOL2_ = BUILD_PROTOCOL2;
 
 	Responder_MessagingEnv(IPSME_MsgEnv * const kp_IPSME, Interface_App * const kpi_App, IEventLog * const kp_IEventLog)
 		: _kp_IPSME(kp_IPSME), _kpi_App(kpi_App), _kp_IEventLog(kp_IEventLog), _referer(kpi_App->referer())
@@ -42,7 +47,7 @@ public:
 
 private:
 	// a touch keep-alive: (re)stamp a soft-state lease for each STORE the orchestrator named. We act only
-	// on participants of THIS reflector's transport ("tcp+l4end"); the rest belong to other reflectors.
+	// on participants of THIS reflector's transport ("ipsme+tcp+l4end"); the rest belong to other reflectors.
 	bool _handler_msgCtrl(IPSME_MsgEnv::t_MSG msg, JSON_MsgCtrl json_msgCtrl)
 	{
 		DebugPrint("%s: [%s]\n", __func__, json_msgCtrl.to_string().c_str());
@@ -57,20 +62,22 @@ private:
 
 			std::string str_protocol = json_participant["protocol"].get<std::string>();
 
-			// interest management: serve only this build's transport protocol (kpsz_PROTOCOL_).
-			if (str_protocol != kpsz_PROTOCOL_) {
-				DebugPrint("%s: skip participant proto[%s] -- not %s\n", __func__, str_protocol.c_str(), kpsz_PROTOCOL_);
+			// interest management: serve only this build's transport protocol, in either spelling.
+			if (str_protocol != kpsz_PROTOCOL1_ && str_protocol != kpsz_PROTOCOL2_) {
+				DebugPrint("%s: skip participant proto[%s] -- not %s/%s\n", __func__, str_protocol.c_str(), kpsz_PROTOCOL1_, kpsz_PROTOCOL2_);
 				continue;
 			}
 
 			// the participant IS the Discovery-svc cxn-pt { protocol, address, port }: dial address:port, and
 			// derive the connection/lease key as protocol://address:port (no separate identification on the
-			// wire). port is a string|integer union (ConnectionPoint schema) -- normalise it to a string.
+			// wire). The key always uses the canonical spelling (kpsz_PROTOCOL1_) so a store touched under
+			// either spelling coalesces to ONE lease/connection. port is a string|integer union
+			// (ConnectionPoint schema) -- normalise it to a string.
 			std::string str_host  = json_participant["address"].get<std::string>();
 			auto        json_port = json_participant["port"];
 			std::string str_port  = json_port.is_string() ? json_port.get<std::string>() : std::to_string(json_port.get<int64_t>());
 			std::string str_address = str_host + ":" + str_port;
-			std::string str_id      = str_protocol + "://" + str_address;
+			std::string str_id      = std::string(kpsz_PROTOCOL1_) + "://" + str_address;
 
 			printf("%s: touch served [%s] proto[%s] id[%s] ttl_msec[%lld]\n",
 			       __func__, str_address.c_str(), str_protocol.c_str(), str_id.c_str(), (long long)i64_ttl_msec);
