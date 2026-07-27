@@ -1,6 +1,6 @@
 {
   "schemas": {
-    "Echo": { "src": "$HOME\\protocols.git\\schemas.readonly\\schema_Echo.json", "sha256": "6279d893e40934327217e7f45ffa629701cbdef324da2711bcde253d3314154a" },
+    "Echo": { "src": "$HOME\\protocols.git\\schemas.readonly\\schema_Echo.json", "sha256": "2e7e0adb62d98907b862decd2a77c2c29fe44a1537bea6edd6d3f713a3ffbb40" },
     "Discovery": { "src": "$HOME\\protocols.git\\schemas.readonly\\schema_Discovery.json", "sha256": "4203809297b294c3573685173d4187023a728e473cfd6fc18769d3953e211c27" },
     "MessagingEnv": { "src": "$HOME\\protocols.git\\schemas.readonly\\schema_MessagingEnv.json", "sha256": "d6dd578f2f33e6503cbbf3338384aaad2f23ca681a6fb24be3207487e5a949b0" }
   },

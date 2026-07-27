@@ -2,6 +2,15 @@
   "$id": "https://root-interface.se/protocols/Echo",
   "$schema": "https://json-schema.org/draft/2019-09/schema",
   "schemas": {
+    "https://root-interface.se/protocols/Echo/definitions": {
+      "$id": "https://root-interface.se/protocols/Echo/definitions",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "definitions": {
+        "_v": {
+          "const": "1"
+        }
+      }
+    },
     "https://root-interface.se/protocols/Echo/EchoRequest": {
       "$id": "https://root-interface.se/protocols/Echo/EchoRequest",
       "$schema": "https://json-schema.org/draft/2019-09/schema",
