@@ -81,4 +81,23 @@
   So my honest read: the explicit ROLE→unit if/else is the more truthful encoding now — it says "there are two supported builds, here they are"
   instead of implying a 2×N grid. The interpolation was prettier; the if/else is more honest about what actually exists.
 
+● It's a mismatch between three views of the same thing — the schema (source of truth), the generated header it produces, and the consumer. Concretely:
+
+  The requirement — discover.ttl_msec:
+  - Source of truth: ~/protocols.git/schemas.readonly/schema_Discovery.json (i.e. C:\Users\dev\protocols.git\schemas.readonly\schema_Discovery.json) — a separate repo,
+  referenced by reflector-.../ifacegenconfig.json ("Discovery": { "src": …schema_Discovery.json, "sha256": "4203…154a" }).
+  - Cached copy (content-addressed, don't edit): reflector-.../schemas/4203809297b294c3573685173d4187023a728e473cfd6fc18769d3953e211c27.json.
+  - Generated output (DO NOT EDIT): reflector-.../generated/interface-Discovery.h:37-39 — the discover object's "required": ["ttl_msec"] (property defined at 40-44).
+
+  The consumer that reads a field the schema doesn't model:
+  - reflector-.../IPSME/Responder_Discovery.hpp:30 — json_msgDiscover["discover"]["echo-request"]
+  - :31 — EchoRequest::validate(json_echoRequest)
+  - :59 — JSON_MsgDiscover::validate(json_msg) — this is the gate; it enforces the ttl_msec requirement from the schema, so a discover carrying echo-request but no ttl_msec
+  fails here and never reaches the echo path at line 31.
+
+  So "where" = the discover sub-schema in protocols.git/schemas.readonly/schema_Discovery.json says required: [ttl_msec] and models no echo-request, while
+  Responder_Discovery.hpp (30–31, gated at 59) expects a discover shaped around echo-request.
+
+  To reconcile it (if discover-with-echo-request is still real), the edit goes in the schema source schema_Discovery.json — add echo-request to discover.properties (and/or
+  drop ttl_msec from required) — then update the sha256 in ifacegenconfig.json and regenerate. Not in the generated .h or the schemas/ cache blob.
 
