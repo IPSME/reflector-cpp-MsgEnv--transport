@@ -92,9 +92,9 @@ public:
         return false;
     }
 
-    bool handler_json_efkt(IPSME_MsgEnv::t_MSG msg, JSON::JSON_Efkt json_efkt)
+    bool handler_json_eff(IPSME_MsgEnv::t_MSG msg, JSON::JSON_Eff json_eff)
     {
-        if (JSON::JSON_Ack::validate(json_efkt) && handler_json_ack(msg, json_efkt))
+        if (JSON::JSON_Ack::validate(json_eff) && handler_json_ack(msg, json_eff))
             return true;
 
         // printf("%s: [%s]\n", __func__, json_msg_msg.to_string().c_str());
@@ -107,7 +107,7 @@ public:
 
     bool handler_json_msg(IPSME_MsgEnv::t_MSG msg, JSON::JSON_Msg json_msg)
     {
-        if (JSON::JSON_Efkt::validate(json_msg) && handler_json_efkt(msg, json_msg))
+        if (JSON::JSON_Eff::validate(json_msg) && handler_json_eff(msg, json_msg))
             return true;
 
         // printf("%s: [%s]\n", __func__, json_msg.to_string().c_str());
