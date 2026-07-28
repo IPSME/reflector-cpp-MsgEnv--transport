@@ -4,7 +4,7 @@
 // package version 0.0.6-api.4 — functional twin of npm @rootintf/iface-messagingenv
 #include "cpp-iface-gen.git/Iface.h"   // the cpp-iface runtime (Iface.h), referenced where it lives
 #include <nlohmann/json.hpp>
-#include "cpp-json-msg.git/json_msg+ack.h"   // base classes: ::JSON::JSON_Msg / JSON_Efkt
+#include "cpp-json-msg.git/json_msg+ack.h"   // base classes: ::JSON::JSON_Msg / JSON_Eff
 
 namespace reflector_iface { namespace MessagingEnv {  // protocol "MessagingEnv"
 

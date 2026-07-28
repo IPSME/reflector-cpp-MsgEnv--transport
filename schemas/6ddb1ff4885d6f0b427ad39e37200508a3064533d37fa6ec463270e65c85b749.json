@@ -7,7 +7,7 @@
       "$schema": "https://json-schema.org/draft/2019-09/schema",
       "definitions": {
         "_v": {
-          "const": "4"
+          "const": "5"
         }
       }
     },
@@ -37,8 +37,8 @@
       },
       "x-base": "JSON_Msg"
     },
-    "https://root-interface.se/protocols/Discovery/JSON_EfktAnnounce": {
-      "$id": "https://root-interface.se/protocols/Discovery/JSON_EfktAnnounce",
+    "https://root-interface.se/protocols/Discovery/JSON_EffAnnounce": {
+      "$id": "https://root-interface.se/protocols/Discovery/JSON_EffAnnounce",
       "$schema": "https://json-schema.org/draft/2019-09/schema",
       "type": "object",
       "required": [
@@ -53,7 +53,7 @@
           "$ref": "definitions#/definitions/_v"
         }
       },
-      "x-base": "JSON_Efkt"
+      "x-base": "JSON_Eff"
     }
   }
 }
