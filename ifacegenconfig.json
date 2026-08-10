@@ -6,12 +6,18 @@
   },
   "targets": [
     {
-      "schema-cache": "./schemas",
-      "out-cpp": "./generated",
+      "IPSME": {
+        "main": "main.cpp",
+        "object": "App",
+        "out": "IPSME"
+      },
+      "schema-cache": "schemas",
+      "out-cpp": "generated",
       "prefix": "interface-",
       "namespace" : "reflector-iface",
       "delete": true,
       "schemas": [ "Echo", "Discovery", "MessagingEnv" ]
     }
-  ]
+  ],
+  "version": 3
 }

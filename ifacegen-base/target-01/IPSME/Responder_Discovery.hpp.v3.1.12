@@ -25,24 +25,6 @@ public:
 
 	// publish_ ...
 
-	void announce()
-	{
-		JSON_EffAnnounce json_effAnnounce = JSON_EffAnnounce::create_with_cause_merge(nullptr, R"(
-{
-    "blahblah" : true
-}
-	    )");
-		assert(JSON_EffAnnounce::validate(json_effAnnounce));
-		std::string str_effAnnounce;
-		PUBLISH3(json_effAnnounce, &str_effAnnounce);
-
-		auto ptr_evt= _kp_IEventLog->add_Event(
-			"Discovery[" + CLASS_NAME(json_effAnnounce) + "]",
-			json_effAnnounce["id"],
-			msg_json_msg(str_effAnnounce.c_str(), json_effAnnounce)
-		);
-	}
-
 private:
 	// -----------------------------------------------------
 	// one per message (reverse schema order):
@@ -59,31 +41,10 @@ private:
 
 	bool _handler_msgDiscover(IPSME_MsgEnv::t_MSG msg, JSON_MsgDiscover json_msgDiscover)
 	{
-		//printf("%s: [%s]\n", __func__, json_msgDiscover.to_string().c_str());
-		DebugPrint("%s: [%s]\n", __func__, json_msgDiscover.to_string().c_str());
+		printf("%s: [%s]\n", __func__, json_msgDiscover.to_string().c_str());
 
-		JSON::JSON_ json_echoRequest = json_msgDiscover["discover"]["echo-request"];
-		if (EchoRequest::validate(json_echoRequest))
-		{
-			bool b_refererFound = false;
-			for (size_t i = 0; i < json_echoRequest.size(); i++) {
-				auto json_participant = json_echoRequest[i]["referer"]["participant"];
-				//if (! json_participant.is_string())
-				//    continue;
-
-				if (json_participant.get<std::string>() == _referer.PARTICIPANT) {
-					b_refererFound = true;
-					break;
-				}
-			}
-			if (! b_refererFound)
-				return false;
-
-			JSON_EffAnnounce json_effAnnounce= JSON_EffAnnounce::create_with_cause_merge(json_msgDiscover, R"( { "echo-response" : [] } )");
-			PUBLISH(json_effAnnounce);
-
-			return true;
-		}
+		// if (! ...)
+		//     return false;
 
 		return false;
 	}

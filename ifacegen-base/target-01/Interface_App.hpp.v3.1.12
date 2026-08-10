@@ -1,0 +1,29 @@
+
+#pragma once
+
+#include <optional>
+#include <string>
+#include <string_view>
+
+#include "cpp-json-msg.git/json_msg+ack.h"
+#include "cpp-EventLog.git/IEventLog.hpp"
+
+// node / electron-main / … C++ participant: the app interface the responders call back into. The
+// entrypoint constructs IPSME_Bridge::get_instance(&app, &eventLog) and drives process_msgs().
+
+class Interface_App {
+public:
+	Interface_App(const JSON::JSON_Msg::Referer& referer)
+		: _referer(referer)
+	{}
+
+	virtual ~Interface_App() = default;
+
+	// ---- the callbacks your responders invoke on the app go here ----
+	// virtual void fxn_(...) = 0;
+
+	const JSON::JSON_Msg::Referer& referer() const { return _referer; }
+
+private:
+	const JSON::JSON_Msg::Referer _referer;
+};

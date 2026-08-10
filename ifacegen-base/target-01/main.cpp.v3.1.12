@@ -1,0 +1,23 @@
+//
+// Participant entrypoint — the C++ analog of the npm shell: construct the app + an event log, get the
+// singleton IPSME_Bridge (which subscribes to the mesh + builds the responder chain), then pump
+// process_msgs() off the message hot path. The wiring is stubbed — fill in the concrete pieces.
+//
+
+#include "Interface_App.hpp"
+#include "IPSME/IPSME_Bridge.hpp"
+// #include "cpp-EventLog.git/InMemory_EventLog.h"   // a concrete IEventLog for the bridge
+
+int main(int /*argc*/, char** /*argv*/)
+{
+	// JSON::JSON_Msg::Referer referer{ /* PARTICIPANT, INSTANCE */ };
+	// <YourApp> app(referer);          // a concrete Interface_App implementing the responder callbacks
+	// InMemory_EventLog eventLog;
+	// auto bridge = IPSME_Bridge::get_instance(&app, &eventLog);
+
+	// drive loop: pump the bridge (the C++ analog of the npm shell's process_msgs interval)
+	// for (;;)
+	//     bridge->process_msgs();
+
+	return 0;
+}

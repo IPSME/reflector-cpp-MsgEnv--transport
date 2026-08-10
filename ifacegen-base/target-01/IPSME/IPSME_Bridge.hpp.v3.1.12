@@ -10,32 +10,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include "IPSME_MsgEnv.h"
+// #include "IPSME_MsgEnv.h"
 #include "../cpp-json-msg.git/json_msg+ack.h"
-
-#define PUBLISH(msg_obj)                                     \
-    do {                                                     \
-        msg_obj.referer(_referer.PARTICIPANT,                \
-                        _referer.INSTANCE);                  \
-        std::string msg_str = msg_obj.to_string();           \
-        printf("%s: publish(%s): [%s]\n",                    \
-               __func__,                                     \
-               CLASS_NAME(msg_obj).c_str(),                  \
-               msg_str.c_str());                             \
-        _kp_IPSME->publish(msg_str.c_str());                 \
-    } while (0)
-
-#define PUBLISH3(msg_obj, p_msg_str)                         \
-    do {                                                     \
-        msg_obj.referer(_referer.PARTICIPANT,                \
-                        _referer.INSTANCE);                  \
-        *p_msg_str = msg_obj.to_string();                    \
-        printf("%s: publish(%s): [%s]\n",                    \
-               __func__,                                     \
-               CLASS_NAME(msg_obj).c_str(),                  \
-               (*p_msg_str).c_str());                        \
-        _kp_IPSME->publish((*p_msg_str).c_str());            \
-    } while (0)
 
 #include "../Interface_App.hpp"
 #include "../cpp-EventLog.git/InMemory_EventLog_ext.hpp"   // IEvent (process_msgs static_pointer_cast) — pulls in the IEventLog interface
@@ -134,13 +110,6 @@ public:
 
 	void handler(IPSME_MsgEnv::t_MSG msg, void*)
 	{
-        // reverse path (ME -> transport): forward every received ME message to the
-        // transport via the App. (on_transport_read = dedup+publish; on_MsgEnv_msg =
-        // cache + write to the asio transport.)
-        if (_kpi_App)
-            _kpi_App->on_MsgEnv_msg(msg, std::string(msg));
-
-
 		try {
 			if (handler_string(msg, std::string(msg)))
 				return;

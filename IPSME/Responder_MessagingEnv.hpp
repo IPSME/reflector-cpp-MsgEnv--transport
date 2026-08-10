@@ -5,12 +5,20 @@
 #include <cstdint>
 #include <map>
 #include <string>
-
+#include <memory>
 #include <nlohmann/json.hpp>
 
 #include "../g_.hpp"
+// #include "IPSME_MsgEnv.h"
+#include "../cpp-json-msg.git/json_msg+ack.h"
 #include "../cpp-EventLog.git/IEventLog.hpp"
+#include "../Interface_App.hpp"
+
 #include "../generated/interface-MessagingEnv.h"
+
+using reflector_iface::MessagingEnv::JSON_MsgCtrl;
+using reflector_iface::MessagingEnv::JSON_AckCtrl;
+using reflector_iface::MessagingEnv::JSON_MsgFilter;
 
 //----------------------------------------------------------------------------------------------------------------
 // Responder for the MessagingEnv `ctrl-msg` (touch) protocol. The orchestrator publishes a touch naming
@@ -30,11 +38,9 @@
 #define BUILD_PROTOCOL2 "tcp+l4end"
 #endif
 
-class Responder_MessagingEnv {
-	// generated-interface types, scoped to this responder (no namespace leak into includers)
-	using JSON_MsgCtrl = reflector_iface::MessagingEnv::JSON_MsgCtrl;
-	using JSON_AckCtrl = reflector_iface::MessagingEnv::JSON_AckCtrl;
+class IEvent;   // reprocess() takes a std::shared_ptr<IEvent> (defined in the bridge's event-log header)
 
+class Responder_MessagingEnv {
 public:
 	// ctrl-msg participants whose protocol is neither kpsz_PROTOCOL1_ nor kpsz_PROTOCOL2_ are not ours.
 	static constexpr const char* kpsz_PROTOCOL1_ = BUILD_PROTOCOL1;
@@ -45,11 +51,64 @@ public:
 	{
 	}
 
+	// build + publish JSON_AckCtrl: _cause = the whole causing touch (standing convention); ack{ok:true} from
+	// the base, then add the handled participant + the MessagingEnv version so it validates as a JSON_AckCtrl.
+	void _publish_ack(const nlohmann::json& json_touch, const nlohmann::json& json_participant)
+	{
+		JSON::JSON_Ack json_ack = JSON::JSON_Ack::create_with_cause_Ok(json_touch, true);
+		json_ack["ack"]["participants"] = nlohmann::json::array({ json_participant });
+		json_ack["MessagingEnv"] = reflector_iface::MessagingEnv::VERSION;
+
+		JSON_AckCtrl json_ackCtrl(json_ack);
+		assert(JSON_AckCtrl::validate(json_ackCtrl));
+		PUBLISH(json_ackCtrl);
+	}
+
 private:
-	// a touch keep-alive: (re)stamp a soft-state lease for each STORE the orchestrator named. We act only
-	// on participants of THIS reflector's transport ("ipsme+tcp+l4end"); the rest belong to other reflectors.
+	// -----------------------------------------------------
+	// one per message (reverse schema order):
+
+	bool _handler_msgFilter(IPSME_MsgEnv::t_MSG msg, JSON_MsgFilter json_msgFilter)
+	{
+		printf("%s: [%s]\n", __func__, json_msgFilter.to_string().c_str());
+
+		// if (! ...)
+		//     return false;
+
+		return false;
+	}
+
+	bool _handler_ackCtrl(IPSME_MsgEnv::t_MSG msg, JSON_AckCtrl json_ackCtrl)
+	{
+		printf("%s: [%s]\n", __func__, json_ackCtrl.to_string().c_str());
+
+		// if (! ...)
+		//     return false;
+
+		return false;
+	}
+
+	// Publish the "connections handled" ack for any pending new-dial whose connection has now SETTLED. Driven
+	// from the main loop (once per tick). Per store: one JSON_AckCtrl, _cause = the causing touch, and
+	// ack.participants = [that store's participant]. The orchestrator releases its parked query per ack and
+	// dedups downstream; a store that never connects simply never acks (its query TTL-expires there).
+	void emit_acks()
+	{
+#if !defined(ROLE_SERVER)
+		for (auto it = _map_pending_ack.begin(); it != _map_pending_ack.end(); ) {
+			if (_kpi_App && _kpi_App->is_connected(it->first)) {
+				_publish_ack(it->second.json_touch, it->second.json_participant);
+				it = _map_pending_ack.erase(it);
+			}
+			else
+				++it;
+		}
+#endif
+	}
+	
 	bool _handler_msgCtrl(IPSME_MsgEnv::t_MSG msg, JSON_MsgCtrl json_msgCtrl)
 	{
+		// printf("%s: [%s]\n", __func__, json_msgCtrl.to_string().c_str());
 		DebugPrint("%s: [%s]\n", __func__, json_msgCtrl.to_string().c_str());
 
 		JSON::JSON_ json_ctrl = json_msgCtrl["ctrl-msg"];
@@ -102,8 +161,22 @@ private:
 	}
 
 public:
+	// -----------------------------------------------------
+	// base dispatch — the bridge calls these:
+
+	bool handler_json_ack(IPSME_MsgEnv::t_MSG msg, JSON::JSON_Ack json_ack)
+	{
+		if (JSON_AckCtrl::validate(json_ack) && _handler_ackCtrl(msg, json_ack))
+			return true;
+
+		return false;
+	}
+
 	bool handler_json_msg(IPSME_MsgEnv::t_MSG msg, JSON::JSON_Msg json_msg)
 	{
+		// if (JSON_MsgFilter::validate(json_msg) && _handler_msgFilter(msg, json_msg))
+		// 	return true;
+
 #if defined(ROLE_SERVER)
 		// server role: this reflector is dialed-INTO (it accepts connections), it does not dial out, so
 		// a touch ctrl-msg is not actionable here -- do nothing on it for now (drop, per interest mgmt).
@@ -117,38 +190,13 @@ public:
 #endif
 	}
 
-	// Publish the "connections handled" ack for any pending new-dial whose connection has now SETTLED. Driven
-	// from the main loop (once per tick). Per store: one JSON_AckCtrl, _cause = the causing touch, and
-	// ack.participants = [that store's participant]. The orchestrator releases its parked query per ack and
-	// dedups downstream; a store that never connects simply never acks (its query TTL-expires there).
-	void emit_acks()
+	bool reprocess(std::shared_ptr<IEvent> ptr_evt)
 	{
-#if !defined(ROLE_SERVER)
-		for (auto it = _map_pending_ack.begin(); it != _map_pending_ack.end(); ) {
-			if (_kpi_App && _kpi_App->is_connected(it->first)) {
-				_publish_ack(it->second.json_touch, it->second.json_participant);
-				it = _map_pending_ack.erase(it);
-			}
-			else
-				++it;
-		}
-#endif
+		// reprocess parked events ...
+		return false;
 	}
 
 private:
-	// build + publish JSON_AckCtrl: _cause = the whole causing touch (standing convention); ack{ok:true} from
-	// the base, then add the handled participant + the MessagingEnv version so it validates as a JSON_AckCtrl.
-	void _publish_ack(const nlohmann::json& json_touch, const nlohmann::json& json_participant)
-	{
-		JSON::JSON_Ack json_ack = JSON::JSON_Ack::create_with_cause_Ok(json_touch, true);
-		json_ack["ack"]["participants"] = nlohmann::json::array({ json_participant });
-		json_ack["MessagingEnv"] = reflector_iface::MessagingEnv::VERSION;
-
-		JSON_AckCtrl json_ackCtrl(json_ack);
-		assert(JSON_AckCtrl::validate(json_ackCtrl));
-		PUBLISH(json_ackCtrl);
-	}
-
 	// a new-dial awaiting its connect to settle before we ack the causing touch.
 	struct Pending {
 		nlohmann::json json_touch;         // the causing ctrl-msg -> _cause of the ack

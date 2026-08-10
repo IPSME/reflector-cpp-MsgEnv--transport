@@ -24,6 +24,7 @@ using namespace std::chrono_literals;
 
 #include "msg_cache-dedup.h"
 
+#include "Interface_App.hpp"
 #include "IPSME/IPSME_Bridge.hpp"
 #include "cpp-EventLog.git/Null_EventLog.hpp"
 #if defined(ROLE_SERVER)

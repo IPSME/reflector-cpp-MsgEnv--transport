@@ -9,21 +9,16 @@ using namespace std::literals::string_view_literals;
 #include "cpp-json-msg.git/json_msg+ack.h"
 #include "cpp-EventLog.git/IEventLog.hpp"
 
-struct DiscoverContext {
-    int idx;
-    struct {
-        std::string data;
-    } evt;
-};
+// node / electron-main / … C++ participant: the app interface the responders call back into. The
+// entrypoint constructs IPSME_Bridge::get_instance(&app, &eventLog) and drives process_msgs().
 
 class Interface_App {
 public:
-    Interface_App(const JSON::JSON_Msg::Referer& referer)
-        : _referer(referer)
-    {
-    }
+	Interface_App(const JSON::JSON_Msg::Referer& referer)
+		: _referer(referer)
+	{}
 
-    virtual ~Interface_App() = default;
+	virtual ~Interface_App() = default;
 
     // Called when a discovery message times out
     virtual bool on_MsgEnv_msg(const char* psz_msg, std::string str_msg) = 0;
@@ -38,9 +33,8 @@ public:
     // still dialing or unknown. Lets the MessagingEnv responder ack a touch only after its new dial has SETTLED.
     virtual bool is_connected(const std::string& str_id) const = 0;
 
-    const JSON::JSON_Msg::Referer& referer() const { return _referer; }
+	const JSON::JSON_Msg::Referer& referer() const { return _referer; }
 
 private:
-    const JSON::JSON_Msg::Referer _referer;
-
+	const JSON::JSON_Msg::Referer _referer;
 };
