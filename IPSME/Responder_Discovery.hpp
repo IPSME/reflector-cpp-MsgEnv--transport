@@ -63,33 +63,33 @@ private:
 
 	bool _handler_msgDiscover(IPSME_MsgEnv::t_MSG msg, JSON_MsgDiscover json_msgDiscover)
 	{
-		//printf("%s: [%s]\n", __func__, json_msgDiscover.to_string().c_str());
+		// printf("%s: [%s]\n", __func__, json_msgDiscover.to_string().c_str());
 		DebugPrint("%s: [%s]\n", __func__, json_msgDiscover.to_string().c_str());
 
-		JSON::JSON_ json_echoRequest = json_msgDiscover["discover"]["echo-request"];
-		if (EchoRequest::validate(json_echoRequest))
-		{
-			bool b_refererFound = false;
-			for (size_t i = 0; i < json_echoRequest.size(); i++) {
-				auto json_participant = json_echoRequest[i]["referer"]["participant"];
-				//if (! json_participant.is_string())
-				//    continue;
+        JSON::JSON_ echoRequest = json_msgDiscover["discover"]["echo-request"];
+        if (! EchoRequest::validate(echoRequest))
+            return false;
 
-				if (json_participant.get<std::string>() == _referer.PARTICIPANT) {
-					b_refererFound = true;
-					break;
-				}
-			}
-			if (! b_refererFound)
-				return false;
+        bool b_refererFound = false;
+        for (size_t i = 0; i < echoRequest.size(); i++) {
+            // a request entry may carry an empty/absent referer (a product with no participant) --
+            // skip it (interest management: drop what we don't understand), never .get<> on null (throws)
+            auto json_participant = echoRequest[i]["referer"]["participant"];
+            if (! json_participant.is_string())
+                continue;
 
-			JSON_EffAnnounce json_effAnnounce= JSON_EffAnnounce::create_with_cause_merge(json_msgDiscover, R"( { "echo-response" : [] } )");
-			PUBLISH(json_effAnnounce);
+            if (json_participant.get<std::string>() == _referer.PARTICIPANT) {
+                b_refererFound = true;
+                break;
+            }
+        }
+        if (! b_refererFound)
+            return false;
 
-			return true;
-		}
+        JSON_EffAnnounce json_effAnnounce= JSON_EffAnnounce::create_with_cause_merge(json_msgDiscover, R"( { "echo-response" : [] } )");
+        PUBLISH(json_effAnnounce);
 
-		return false;
+		return true;
 	}
 
 public:
