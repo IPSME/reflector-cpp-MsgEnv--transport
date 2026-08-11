@@ -4,19 +4,23 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 
+#include "../g_.hpp"
 // #include "IPSME_MsgEnv.h"
 #include "../cpp-json-msg.git/json_msg+ack.h"
 #include "../cpp-EventLog.git/IEventLog.hpp"
 #include "../Interface_App.hpp"
 
+#include "../generated/interface-Echo.h"
 #include "../generated/interface-Discovery.h"
-
-using reflector_iface::Discovery::JSON_MsgDiscover;
-using reflector_iface::Discovery::JSON_EffAnnounce;
 
 class IEvent;   // reprocess() takes a std::shared_ptr<IEvent> (defined in the bridge's event-log header)
 
 class Responder_Discovery {
+	// generated-interface types, scoped to this responder (no namespace leak into includers)
+	using JSON_MsgDiscover = reflector_iface::Discovery::JSON_MsgDiscover;
+	using JSON_EffAnnounce = reflector_iface::Discovery::JSON_EffAnnounce;
+	using EchoRequest      = reflector_iface::Echo::EchoRequest;
+
 public:
 	Responder_Discovery(IPSME_MsgEnv * const kp_IPSME, Interface_App * const kpi_App, IEventLog * const kp_IEventLog)
 		: _kp_IPSME(kp_IPSME), _kpi_App(kpi_App), _kp_IEventLog(kp_IEventLog), _referer(kpi_App->referer())

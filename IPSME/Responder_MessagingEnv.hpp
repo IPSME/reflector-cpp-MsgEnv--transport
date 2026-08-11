@@ -16,10 +16,6 @@
 
 #include "../generated/interface-MessagingEnv.h"
 
-using reflector_iface::MessagingEnv::JSON_MsgCtrl;
-using reflector_iface::MessagingEnv::JSON_AckCtrl;
-using reflector_iface::MessagingEnv::JSON_MsgFilter;
-
 //----------------------------------------------------------------------------------------------------------------
 // Responder for the MessagingEnv `ctrl-msg` (touch) protocol. The orchestrator publishes a touch naming
 // the store participants it wants reflectors to hold connections to. A reflector serves ONLY the
@@ -42,6 +38,11 @@ class IEvent;   // reprocess() takes a std::shared_ptr<IEvent> (defined in the b
 
 class Responder_MessagingEnv {
 public:
+	// generated-interface types, scoped to this responder (no namespace leak into includers)
+	using JSON_MsgCtrl = reflector_iface::MessagingEnv::JSON_MsgCtrl;
+	using JSON_AckCtrl = reflector_iface::MessagingEnv::JSON_AckCtrl;
+	using JSON_MsgFilter = reflector_iface::MessagingEnv::JSON_MsgFilter;
+
 	// ctrl-msg participants whose protocol is neither kpsz_PROTOCOL1_ nor kpsz_PROTOCOL2_ are not ours.
 	static constexpr const char* kpsz_PROTOCOL1_ = BUILD_PROTOCOL1;
 	static constexpr const char* kpsz_PROTOCOL2_ = BUILD_PROTOCOL2;
@@ -64,6 +65,24 @@ public:
 		PUBLISH(json_ackCtrl);
 	}
 
+	// Publish the "connections handled" ack for any pending new-dial whose connection has now SETTLED. Driven
+	// from the main loop (once per tick). Per store: one JSON_AckCtrl, _cause = the causing touch, and
+	// ack.participants = [that store's participant]. The orchestrator releases its parked query per ack and
+	// dedups downstream; a store that never connects simply never acks (its query TTL-expires there).
+	void emit_acks()
+	{
+#if !defined(ROLE_SERVER)
+		for (auto it = _map_pending_ack.begin(); it != _map_pending_ack.end(); ) {
+			if (_kpi_App && _kpi_App->is_connected(it->first)) {
+				_publish_ack(it->second.json_touch, it->second.json_participant);
+				it = _map_pending_ack.erase(it);
+			}
+			else
+				++it;
+		}
+#endif
+	}
+	
 private:
 	// -----------------------------------------------------
 	// one per message (reverse schema order):
@@ -88,24 +107,6 @@ private:
 		return false;
 	}
 
-	// Publish the "connections handled" ack for any pending new-dial whose connection has now SETTLED. Driven
-	// from the main loop (once per tick). Per store: one JSON_AckCtrl, _cause = the causing touch, and
-	// ack.participants = [that store's participant]. The orchestrator releases its parked query per ack and
-	// dedups downstream; a store that never connects simply never acks (its query TTL-expires there).
-	void emit_acks()
-	{
-#if !defined(ROLE_SERVER)
-		for (auto it = _map_pending_ack.begin(); it != _map_pending_ack.end(); ) {
-			if (_kpi_App && _kpi_App->is_connected(it->first)) {
-				_publish_ack(it->second.json_touch, it->second.json_participant);
-				it = _map_pending_ack.erase(it);
-			}
-			else
-				++it;
-		}
-#endif
-	}
-	
 	bool _handler_msgCtrl(IPSME_MsgEnv::t_MSG msg, JSON_MsgCtrl json_msgCtrl)
 	{
 		// printf("%s: [%s]\n", __func__, json_msgCtrl.to_string().c_str());
