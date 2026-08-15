@@ -13,6 +13,16 @@
 #include "../generated/interface-Echo.h"
 #include "../generated/interface-Discovery.h"
 
+// the transport protocol this reflector SERVICES, injected by CMake (two accepted wire spellings
+// of the SAME protocol -- see Responder_MessagingEnv); fallbacks mirror that header so this one
+// stays self-contained.
+#ifndef BUILD_PROTOCOL1
+#define BUILD_PROTOCOL1 "ipsme+tcp+l4end"
+#endif
+#ifndef BUILD_PROTOCOL2
+#define BUILD_PROTOCOL2 "tcp+l4end"
+#endif
+
 class IEvent;   // reprocess() takes a std::shared_ptr<IEvent> (defined in the bridge's event-log header)
 
 class Responder_Discovery {
@@ -65,6 +75,31 @@ private:
 	{
 		// printf("%s: [%s]\n", __func__, json_msgDiscover.to_string().c_str());
 		DebugPrint("%s: [%s]\n", __func__, json_msgDiscover.to_string().c_str());
+
+		// A CAPABILITY discover (discover.protocols -- 'who out there services these transports?'
+		// / discover.interfaces -- 'who out there ACCEPTS these message dialects?'): answer with
+		// what THIS reflector offers -- the transport protocols it services (both accepted
+		// spellings: PROTOCOL1 canonical, PROTOCOL2 the alternate) and the interfaces it accepts
+		// (MessagingEnv: the ctrl-msg touches are handled here) -- each answered only when asked,
+		// cause-merged onto the discover. A liveness discover (echo-request) continues below.
+		const bool b_protocols= json_msgDiscover["discover"]["protocols"].is_array();
+		const bool b_interfaces= json_msgDiscover["discover"]["interfaces"].is_object();
+		if (b_protocols || b_interfaces) {
+			nlohmann::json json_announce;
+			if (b_protocols)
+				json_announce["protocols"]= { BUILD_PROTOCOL1, BUILD_PROTOCOL2 };
+			if (b_interfaces) {
+				// interfaces = MAP of name -> sha256 of the accepted SCHEMA FILE (the hash is the
+				// identity, the name the label), hand-transcribed from ifacegenconfig.json's pin --
+				// iface-gen emitting a SCHEMA_SHA256 const would make this readable from the
+				// generated header instead
+				json_announce["interfaces"]["MessagingEnv"]= "d6dd578f2f33e6503cbbf3338384aaad2f23ca681a6fb24be3207487e5a949b0";
+			}
+			JSON_EffAnnounce json_effAnnounce= JSON_EffAnnounce::create_with_cause_merge(json_msgDiscover, json_announce);
+			printf("%s: capability discover -> announce [%s]\n", __func__, json_effAnnounce["announce"].dump().c_str());
+			PUBLISH(json_effAnnounce);
+			return true;
+		}
 
         JSON::JSON_ echoRequest = json_msgDiscover["discover"]["echo-request"];
         if (! EchoRequest::validate(echoRequest))
