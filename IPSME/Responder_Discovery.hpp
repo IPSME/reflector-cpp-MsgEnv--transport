@@ -14,13 +14,13 @@
 #include "../generated/interface-Discovery.h"
 
 // the transport protocol this reflector SERVICES, injected by CMake (two accepted wire spellings
-// of the SAME protocol -- see Responder_MessagingEnv); fallbacks mirror that header so this one
-// stays self-contained.
+// of the SAME protocol -- see Responder_MessagingEnv). NO fallback -- a missing injection must
+// fail the build, never default to another transport's spelling.
 #ifndef BUILD_PROTOCOL1
-#define BUILD_PROTOCOL1 "ipsme+tcp+l4end"
+#error "BUILD_PROTOCOL1 not defined -- injected by CMake from TRANSPORT (see CMakeLists PROTOCOL1)"
 #endif
 #ifndef BUILD_PROTOCOL2
-#define BUILD_PROTOCOL2 "tcp+l4end"
+#error "BUILD_PROTOCOL2 not defined -- injected by CMake from TRANSPORT (see CMakeLists PROTOCOL2)"
 #endif
 
 class IEvent;   // reprocess() takes a std::shared_ptr<IEvent> (defined in the bridge's event-log header)
