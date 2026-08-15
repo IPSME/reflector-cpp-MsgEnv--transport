@@ -1,0 +1,47 @@
+{
+  "$id": "https://root-interface.se/protocols/Definitions/Protocols",
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "schemas": {
+    "https://root-interface.se/protocols/Definitions/protocols": {
+      "$id": "https://root-interface.se/protocols/Definitions/protocols",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "definitions": {
+        "_v": {
+          "const": "1"
+        },
+        "protocols": {
+          "type": "object",
+          "required": [
+            "ttl_msec",
+            "protocols",
+            "interfaces"
+          ],
+          "properties": {
+            "ttl_msec": {
+              "type": "integer"
+            },
+            "protocols": {
+              "$comment": "the transport protocols serviced (wire spellings, e.g. \"ipsme+tcp+l4end\"); a participant with none states the empty array -- absence is never an omission",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "interfaces": {
+              "$comment": "the message-dialect interfaces accepted: a MAP of interface name -> sha256 of its SCHEMA FILE (the hash is the identity, the name the label)",
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "https://root-interface.se/protocols/Definitions/Protocols": {
+      "$id": "https://root-interface.se/protocols/Definitions/Protocols",
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "$ref": "protocols#/definitions/protocols"
+    }
+  }
+}
