@@ -69,6 +69,11 @@ public:
 	{
 		bool b_ret = _uptr_IPSME->subscribe(&_handler_static, NULL);
 		assert(b_ret);
+
+		// BOOT capability declaration: a just-started reflector announces what it services/accepts
+		// UNCAUSED -- it cannot have heard any ask already in flight (broadcast has no replay), so
+		// it declares instead of waiting to be asked.
+		_responder_Discovery->announce();
 	}
 
 	~IPSME_Bridge()	{ _uptr_IPSME->unsubscribe(&_handler_static); }

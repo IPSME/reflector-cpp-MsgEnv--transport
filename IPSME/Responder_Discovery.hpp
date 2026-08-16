@@ -39,13 +39,30 @@ public:
 
 	// publish_ ...
 
+	// The capability truth this reflector ANSWERS a discover with: the transport protocols it
+	// SERVICES (both accepted spellings: PROTOCOL1 canonical, PROTOCOL2 the alternate) + the
+	// message-dialect interfaces it ACCEPTS (MessagingEnv: the ctrl-msg touches are handled here)
+	// as a MAP of name -> sha256 of the accepted SCHEMA FILE (the hash is the identity, the name
+	// the label; hand-transcribed from ifacegenconfig.json's pin -- iface-gen emitting a
+	// SCHEMA_SHA256 const would make it readable from the generated header instead). Capabilities
+	// are spoken ONLY where they are asked for -- the caused discover answer below; the boot
+	// announce is minimal and carries none of this.
+	static nlohmann::json _json_capabilities()
+	{
+		nlohmann::json json_body;
+		json_body["protocols"]= { BUILD_PROTOCOL1, BUILD_PROTOCOL2 };
+		json_body["interfaces"]["MessagingEnv"]= "d6dd578f2f33e6503cbbf3338384aaad2f23ca681a6fb24be3207487e5a949b0";
+		return json_body;
+	}
+
+	// BOOT declaration, MINIMAL: an EMPTY announce -- the ENVELOPE is the message (referer = who
+	// just booted; no _cause = unprompted, which is what makes it a declaration). Its consumer
+	// (dvi's do-install ack gate) reads only the envelope; anyone wanting capabilities ASKS (the
+	// discover), and the answer speaks them. Published UNCAUSED because a just-started reflector
+	// cannot have heard any ask already in flight (broadcast has no replay).
 	void announce()
 	{
-		JSON_EffAnnounce json_effAnnounce = JSON_EffAnnounce::create_with_cause_merge(nullptr, R"(
-{
-    "blahblah" : true
-}
-	    )");
+		JSON_EffAnnounce json_effAnnounce = JSON_EffAnnounce::create_with_cause_merge(nullptr, nlohmann::json::object());
 		assert(JSON_EffAnnounce::validate(json_effAnnounce));
 		std::string str_effAnnounce;
 		PUBLISH3(json_effAnnounce, &str_effAnnounce);
@@ -85,16 +102,10 @@ private:
 		const bool b_protocols= json_msgDiscover["discover"]["protocols"].is_array();
 		const bool b_interfaces= json_msgDiscover["discover"]["interfaces"].is_object();
 		if (b_protocols || b_interfaces) {
-			nlohmann::json json_announce;
-			if (b_protocols)
-				json_announce["protocols"]= { BUILD_PROTOCOL1, BUILD_PROTOCOL2 };
-			if (b_interfaces) {
-				// interfaces = MAP of name -> sha256 of the accepted SCHEMA FILE (the hash is the
-				// identity, the name the label), hand-transcribed from ifacegenconfig.json's pin --
-				// iface-gen emitting a SCHEMA_SHA256 const would make this readable from the
-				// generated header instead
-				json_announce["interfaces"]["MessagingEnv"]= "d6dd578f2f33e6503cbbf3338384aaad2f23ca681a6fb24be3207487e5a949b0";
-			}
+			// answer only what was ASKED, composed from the one capability truth
+			nlohmann::json json_announce= _json_capabilities();
+			if (! b_protocols)  json_announce.erase("protocols");
+			if (! b_interfaces) json_announce.erase("interfaces");
 			JSON_EffAnnounce json_effAnnounce= JSON_EffAnnounce::create_with_cause_merge(json_msgDiscover, json_announce);
 			printf("%s: capability discover -> announce [%s]\n", __func__, json_effAnnounce["announce"].dump().c_str());
 			PUBLISH(json_effAnnounce);
